@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\User\RoleController;
 use App\Http\Controllers\Api\User\UserController;
 use App\Http\Controllers\Api\Parent\ParentController;
 use App\Http\Controllers\Api\Teacher\TeacherController;
+use App\Http\Controllers\Api\Academic\AcademicYearController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -191,4 +192,39 @@ Route::middleware([
         TeacherController::class,
         'updateStatus',
     ]);
+});
+
+//  Route for Academy Year
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/academic-years', [
+        AcademicYearController::class,
+        'index',
+    ]);
+
+    Route::post('/academic-years', [
+        AcademicYearController::class,
+        'store',
+    ]);
+
+    Route::get('/academic-years/{academicYear}', [
+        AcademicYearController::class,
+        'show',
+    ]);
+
+    Route::patch('/academic-years/{academicYear}', [
+        AcademicYearController::class,
+        'update',
+    ]);
+
+    Route::patch(
+        '/academic-years/{academicYear}/status',
+        [
+            AcademicYearController::class,
+            'updateStatus',
+        ]
+    );
 });
