@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -51,8 +52,15 @@ class User extends Authenticatable
 
     //  Add Parent relate to User
 
-    public function parentProfile() : HasOne 
+    public function parentProfile(): HasOne
     {
         return $this->hasOne(parentProfile::class);
+    }
+
+    // Add teacher reate to Users
+
+    public function teacher(): HasOne
+    {
+        return $this->hasOne(Teacher::class);
     }
 }

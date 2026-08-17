@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\User\RoleController;
 use App\Http\Controllers\Api\User\UserController;
 use App\Http\Controllers\Api\Parent\ParentController;
+use App\Http\Controllers\Api\Teacher\TeacherController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -157,4 +158,37 @@ Route::middleware([
             'detachStudent',
         ]
     );
+});
+
+// Route For Teacher
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/teachers', [
+        TeacherController::class,
+        'index',
+    ]);
+
+    Route::post('/teachers', [
+        TeacherController::class,
+        'store',
+    ]);
+
+    Route::get('/teachers/{teacher}', [
+        TeacherController::class,
+        'show',
+    ]);
+
+    Route::patch('/teachers/{teacher}', [
+        TeacherController::class,
+        'update',
+    ]);
+
+    Route::patch('/teachers/{teacher}/status', [
+        TeacherController::class,
+        'updateStatus',
+    ]);
 });
