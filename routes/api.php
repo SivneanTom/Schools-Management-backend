@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Parent\ParentController;
 use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Academic\AcademicYearController;
 use App\Http\Controllers\Api\Academic\SemesterController;
+use App\Http\Controllers\Api\Academic\GradeController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -259,6 +260,39 @@ Route::middleware([
 
     Route::patch('/semesters/{semester}/status', [
         SemesterController::class,
+        'updateStatus',
+    ]);
+});
+
+// Route for Grade
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/grades', [
+        GradeController::class,
+        'index',
+    ]);
+
+    Route::post('/grades', [
+        GradeController::class,
+        'store',
+    ]);
+
+    Route::get('/grades/{grade}', [
+        GradeController::class,
+        'show',
+    ]);
+
+    Route::patch('/grades/{grade}', [
+        GradeController::class,
+        'update',
+    ]);
+
+    Route::patch('/grades/{grade}/status', [
+        GradeController::class,
         'updateStatus',
     ]);
 });
