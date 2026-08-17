@@ -7,56 +7,43 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Student extends Model
+class ParentProfile extends Model
 {
     use HasFactory;
 
+    protected $table = 'parents';
+
     protected $fillable = [
         'user_id',
-        'student_code',
+        'parent_code',
         'first_name_km',
         'last_name_km',
         'first_name_en',
         'last_name_en',
         'gender',
-        'date_of_birth',
         'phone',
         'address_km',
         'address_en',
-        'admission_date',
         'status',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'date_of_birth' => 'date',
-            'admission_date' => 'date',
-        ];
-    }
-
-    // Add User relate to student
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    //  Add Parent relate to Student
-
-    public function parents() : BelongsToMany {
-
+    public function students(): BelongsToMany
+    {
         return $this->belongsToMany(
-            ParentProfile::class,
+            Student::class,
             'student_parents',
-            'student_id',
-            'parent_id'
+            'parent_id',
+            'student_id'
         )
-        ->withPivot([
-            'relationship',
-            'is_primary',
-        ])
-        ->withTimestamps();
+            ->withPivot([
+                'relationship',
+                'is_primary',
+            ])
+            ->withTimestamps();
     }
-
 }

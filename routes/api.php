@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\User\RoleController;
 use App\Http\Controllers\Api\User\UserController;
+use App\Http\Controllers\Api\Parent\ParentController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -107,4 +108,53 @@ Route::middleware([
             'updateStatus',
         ]);
     });
+});
+
+// Route FOR Parents
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/parents', [
+        ParentController::class,
+        'index',
+    ]);
+
+    Route::post('/parents', [
+        ParentController::class,
+        'store',
+    ]);
+
+    Route::get('/parents/{parent}', [
+        ParentController::class,
+        'show',
+    ]);
+
+    Route::patch('/parents/{parent}', [
+        ParentController::class,
+        'update',
+    ]);
+
+    Route::patch('/parents/{parent}/status', [
+        ParentController::class,
+        'updateStatus',
+    ]);
+
+    Route::post(
+        '/parents/{parent}/students/{student}',
+        [
+            ParentController::class,
+            'attachStudent',
+        ]
+    );
+
+    Route::delete(
+        '/parents/{parent}/students/{student}',
+        [
+            ParentController::class,
+            'detachStudent',
+        ]
+    );
 });
