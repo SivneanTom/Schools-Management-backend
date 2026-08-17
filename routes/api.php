@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\User\UserController;
 use App\Http\Controllers\Api\Parent\ParentController;
 use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Academic\AcademicYearController;
+use App\Http\Controllers\Api\Academic\SemesterController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -227,4 +228,37 @@ Route::middleware([
             'updateStatus',
         ]
     );
+});
+
+// Route for Semester
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/semesters', [
+        SemesterController::class,
+        'index',
+    ]);
+
+    Route::post('/semesters', [
+        SemesterController::class,
+        'store',
+    ]);
+
+    Route::get('/semesters/{semester}', [
+        SemesterController::class,
+        'show',
+    ]);
+
+    Route::patch('/semesters/{semester}', [
+        SemesterController::class,
+        'update',
+    ]);
+
+    Route::patch('/semesters/{semester}/status', [
+        SemesterController::class,
+        'updateStatus',
+    ]);
 });
