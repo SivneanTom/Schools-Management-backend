@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Academic\AcademicYearController;
 use App\Http\Controllers\Api\Academic\SemesterController;
 use App\Http\Controllers\Api\Academic\GradeController;
+use App\Http\Controllers\Api\Academic\SchoolClassController;
+use App\Http\Controllers\Api\Academic\SubjectController;
+use App\Http\Controllers\Api\Academic\GradeSubjectController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -294,5 +297,102 @@ Route::middleware([
     Route::patch('/grades/{grade}/status', [
         GradeController::class,
         'updateStatus',
+    ]);
+});
+
+// Route for Class
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/classes', [
+        SchoolClassController::class,
+        'index',
+    ]);
+
+    Route::post('/classes', [
+        SchoolClassController::class,
+        'store',
+    ]);
+
+    Route::get('/classes/{schoolClass}', [
+        SchoolClassController::class,
+        'show',
+    ]);
+
+    Route::patch('/classes/{schoolClass}', [
+        SchoolClassController::class,
+        'update',
+    ]);
+
+    Route::patch('/classes/{schoolClass}/status', [
+        SchoolClassController::class,
+        'updateStatus',
+    ]);
+});
+
+// Route for Subject
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/subjects', [
+        SubjectController::class,
+        'index',
+    ]);
+
+    Route::post('/subjects', [
+        SubjectController::class,
+        'store',
+    ]);
+
+    Route::get('/subjects/{subject}', [
+        SubjectController::class,
+        'show',
+    ]);
+
+    Route::patch('/subjects/{subject}', [
+        SubjectController::class,
+        'update',
+    ]);
+
+    Route::patch('/subjects/{subject}/status', [
+        SubjectController::class,
+        'updateStatus',
+    ]);
+});
+
+// Grade Subject / Curriculum routes
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+
+    Route::get('/grade-subjects', [
+        GradeSubjectController::class,
+        'index',
+    ]);
+
+    Route::post('/grade-subjects', [
+        GradeSubjectController::class,
+        'store',
+    ]);
+
+    Route::get('/grade-subjects/{gradeSubject}', [
+        GradeSubjectController::class,
+        'show',
+    ]);
+
+    Route::patch('/grade-subjects/{gradeSubject}', [
+        GradeSubjectController::class,
+        'update',
+    ]);
+
+    Route::delete('/grade-subjects/{gradeSubject}', [
+        GradeSubjectController::class,
+        'destroy',
     ]);
 });

@@ -68,7 +68,7 @@ class GradeController extends Controller
             )
 
             ->paginate(
-                $request->integer('size', 10)
+                $request->integer('size', 12)
             );
 
         return response()->json([
