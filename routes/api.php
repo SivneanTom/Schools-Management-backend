@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\Academic\GradeController;
 use App\Http\Controllers\Api\Academic\SchoolClassController;
 use App\Http\Controllers\Api\Academic\SubjectController;
 use App\Http\Controllers\Api\Academic\GradeSubjectController;
+use App\Http\Controllers\Api\Academic\EnrollmentController;
+use App\Http\Controllers\Api\Academic\TeacherAssignmentController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -395,4 +397,25 @@ Route::middleware([
         GradeSubjectController::class,
         'destroy',
     ]);
+});
+
+// Put these inside routes/api.php.
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL',
+])->group(function () {
+    // Enrollments
+    Route::get('/enrollments', [EnrollmentController::class, 'index']);
+    Route::post('/enrollments', [EnrollmentController::class, 'store']);
+    Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show']);
+    Route::patch('/enrollments/{enrollment}', [EnrollmentController::class, 'update']);
+    Route::patch('/enrollments/{enrollment}/status', [EnrollmentController::class, 'updateStatus']);
+
+    // Teacher Assignments
+    Route::get('/teacher-assignments', [TeacherAssignmentController::class, 'index']);
+    Route::post('/teacher-assignments', [TeacherAssignmentController::class, 'store']);
+    Route::get('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'show']);
+    Route::patch('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'update']);
+    Route::patch('/teacher-assignments/{teacherAssignment}/status', [TeacherAssignmentController::class, 'updateStatus']);
+
 });
