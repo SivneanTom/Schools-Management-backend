@@ -21,6 +21,10 @@ use App\Http\Controllers\Api\Room\RoomController;
 use App\Http\Controllers\Api\Timetable\TimetableController;
 use App\Http\Controllers\Api\AttendanceSession\AttendanceSessionController;
 use App\Http\Controllers\Api\AttendanceRecord\AttendanceRecordController;
+use App\Http\Controllers\Api\Exam\ExamController;
+use App\Http\Controllers\Api\ExamSubject\ExamSubjectController;
+use App\Http\Controllers\Api\ExamResult\ExamResultController;
+
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -520,23 +524,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
+/*-
 | Attendance Records API
-|--------------------------------------------------------------------------
-|
-| Attendance records contain student-specific academic information.
-| For now these CRUD endpoints are restricted to:
-|
-| SUPER_ADMIN
-| ADMIN
-| PRINCIPAL
-| TEACHER
-|
-| Later, Student and Parent can receive separate "my attendance"
-| read endpoints with row-level access instead of exposing every
-| student's attendance through this management endpoint.
-|
 */
 
 Route::middleware([
@@ -589,5 +578,76 @@ Route::middleware([
             AttendanceRecordController::class,
             'destroy',
         ]
+    );
+});
+
+// Exams
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exams',[ExamController::class,'index']);
+    Route::get('/exams/{exam}',[ExamController::class,'show']);
+
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER')->group(function () {
+        Route::post('/exams',[ExamController::class,'store']);
+        Route::put('/exams/{exam}',[ExamController::class,'update']);
+        Route::patch('/exams/{exam}',[ExamController::class,'update']);
+        Route::delete('/exams/{exam}',[ExamController::class,'destroy']);
+    });
+});
+// Exam Subject
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
+    Route::get('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'show']);
+
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER')->group(function () {
+        Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
+        Route::put('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'update']);
+        Route::patch('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'update']);
+        Route::delete('/exam-subjects/{examSubject}', [ExamSubjectController::class, 'destroy']);
+    });
+});
+//  Exam Results
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER',
+])->group(function () {
+    Route::get(
+        '/exam-results',
+        [ExamResultController::class, 'index']
+    );
+
+    Route::post(
+        '/exam-results',
+        [ExamResultController::class, 'store']
+    );
+
+    Route::get(
+        '/exam-results/{examResult}',
+        [ExamResultController::class, 'show']
+    );
+
+    Route::put(
+        '/exam-results/{examResult}',
+        [ExamResultController::class, 'update']
+    );
+
+    Route::patch(
+        '/exam-results/{examResult}',
+        [ExamResultController::class, 'update']
+    );
+
+    Route::post(
+        '/exam-results/{examResult}/publish',
+        [ExamResultController::class, 'publish']
+    );
+
+    Route::post(
+        '/exam-results/{examResult}/unpublish',
+        [ExamResultController::class, 'unpublish']
+    );
+
+    Route::delete(
+        '/exam-results/{examResult}',
+        [ExamResultController::class, 'destroy']
     );
 });
