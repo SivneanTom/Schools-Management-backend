@@ -17,6 +17,10 @@ use App\Http\Controllers\Api\Academic\SubjectController;
 use App\Http\Controllers\Api\Academic\GradeSubjectController;
 use App\Http\Controllers\Api\Academic\EnrollmentController;
 use App\Http\Controllers\Api\Academic\TeacherAssignmentController;
+use App\Http\Controllers\Api\Room\RoomController;
+use App\Http\Controllers\Api\Timetable\TimetableController;
+use App\Http\Controllers\Api\AttendanceSession\AttendanceSessionController;
+use App\Http\Controllers\Api\AttendanceRecord\AttendanceRecordController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -418,4 +422,172 @@ Route::middleware([
     Route::patch('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'update']);
     Route::patch('/teacher-assignments/{teacherAssignment}/status', [TeacherAssignmentController::class, 'updateStatus']);
 
+});
+
+// Rooms
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rooms', [RoomController::class, 'index']);
+    Route::get('/rooms/{room}', [RoomController::class, 'show']);
+
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL')->group(function () {
+        Route::post('/rooms', [RoomController::class, 'store']);
+        Route::put('/rooms/{room}', [RoomController::class, 'update']);
+        Route::patch('/rooms/{room}', [RoomController::class, 'update']);
+        Route::delete('/rooms/{room}', [RoomController::class, 'destroy']);
+    });
+});
+
+// Time tables
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/timetables', [TimetableController::class, 'index']);
+    Route::get('/timetables/{timetable}', [TimetableController::class, 'show']);
+
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL')->group(function () {
+        Route::post('/timetables', [TimetableController::class, 'store']);
+        Route::put('/timetables/{timetable}', [TimetableController::class, 'update']);
+        Route::patch('/timetables/{timetable}', [TimetableController::class, 'update']);
+        Route::delete('/timetables/{timetable}', [TimetableController::class, 'destroy']);
+    });
+});
+/*
+|--------------------------------------------------------------------------
+| Attendance Sessions API
+|--------------------------------------------------------------------------
+|
+| Read:
+|   Any authenticated user.
+|
+| Manage:
+|   SUPER_ADMIN, ADMIN, PRINCIPAL, TEACHER.
+|
+| Teachers need access because taking attendance is part of the
+| Teacher role in this School Management System.
+|
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get(
+        '/attendance-sessions',
+        [
+            AttendanceSessionController::class,
+            'index',
+        ]
+    );
+
+    Route::get(
+        '/attendance-sessions/{attendanceSession}',
+        [
+            AttendanceSessionController::class,
+            'show',
+        ]
+    );
+
+    Route::middleware(
+        'role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER'
+    )->group(function () {
+        Route::post(
+            '/attendance-sessions',
+            [
+                AttendanceSessionController::class,
+                'store',
+            ]
+        );
+
+        Route::put(
+            '/attendance-sessions/{attendanceSession}',
+            [
+                AttendanceSessionController::class,
+                'update',
+            ]
+        );
+
+        Route::patch(
+            '/attendance-sessions/{attendanceSession}',
+            [
+                AttendanceSessionController::class,
+                'update',
+            ]
+        );
+
+        Route::delete(
+            '/attendance-sessions/{attendanceSession}',
+            [
+                AttendanceSessionController::class,
+                'destroy',
+            ]
+        );
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Attendance Records API
+|--------------------------------------------------------------------------
+|
+| Attendance records contain student-specific academic information.
+| For now these CRUD endpoints are restricted to:
+|
+| SUPER_ADMIN
+| ADMIN
+| PRINCIPAL
+| TEACHER
+|
+| Later, Student and Parent can receive separate "my attendance"
+| read endpoints with row-level access instead of exposing every
+| student's attendance through this management endpoint.
+|
+*/
+
+Route::middleware([
+    'auth:sanctum',
+    'role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER',
+])->group(function () {
+    Route::get(
+        '/attendance-records',
+        [
+            AttendanceRecordController::class,
+            'index',
+        ]
+    );
+
+    Route::post(
+        '/attendance-records',
+        [
+            AttendanceRecordController::class,
+            'store',
+        ]
+    );
+
+    Route::get(
+        '/attendance-records/{attendanceRecord}',
+        [
+            AttendanceRecordController::class,
+            'show',
+        ]
+    );
+
+    Route::put(
+        '/attendance-records/{attendanceRecord}',
+        [
+            AttendanceRecordController::class,
+            'update',
+        ]
+    );
+
+    Route::patch(
+        '/attendance-records/{attendanceRecord}',
+        [
+            AttendanceRecordController::class,
+            'update',
+        ]
+    );
+
+    Route::delete(
+        '/attendance-records/{attendanceRecord}',
+        [
+            AttendanceRecordController::class,
+            'destroy',
+        ]
+    );
 });
