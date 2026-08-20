@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserStatusRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -61,6 +63,28 @@ class UserController extends Controller
         ]);
     }
 
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $user = User::create([
+            'role_id' => $data['role_id'],
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'preferred_language' => $data['preferred_language'] ?? 'KM',
+            'status' => $data['status'] ?? 'ACTIVE',
+        ]);
+
+        $user->load('role');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully.',
+            'data' => $user,
+        ], 201);
+    }
+
     public function show(User $user): JsonResponse
     {
         $user->load('role');
@@ -71,12 +95,10 @@ class UserController extends Controller
         ]);
     }
 
-    // update Status (ACTIVE , INACTIVE)
     public function updateStatus(
         UpdateUserStatusRequest $request,
         User $user
     ): JsonResponse {
-
         if (
             $request->user()->id === $user->id &&
             $request->validated('status') !== 'ACTIVE'
