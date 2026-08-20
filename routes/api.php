@@ -24,6 +24,9 @@ use App\Http\Controllers\Api\AttendanceRecord\AttendanceRecordController;
 use App\Http\Controllers\Api\Exam\ExamController;
 use App\Http\Controllers\Api\ExamSubject\ExamSubjectController;
 use App\Http\Controllers\Api\ExamResult\ExamResultController;
+use App\Http\Controllers\Api\Assignment\AssignmentController;
+use App\Http\Controllers\Api\AssignmentSubmission\AssignmentSubmissionController;
+use App\Http\Controllers\Api\LearningMaterial\LearningMaterialController;
 
 
 //  Route for Auth
@@ -425,7 +428,6 @@ Route::middleware([
     Route::get('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'show']);
     Route::patch('/teacher-assignments/{teacherAssignment}', [TeacherAssignmentController::class, 'update']);
     Route::patch('/teacher-assignments/{teacherAssignment}/status', [TeacherAssignmentController::class, 'updateStatus']);
-
 });
 
 // Rooms
@@ -584,14 +586,14 @@ Route::middleware([
 // Exams
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/exams',[ExamController::class,'index']);
-    Route::get('/exams/{exam}',[ExamController::class,'show']);
+    Route::get('/exams', [ExamController::class, 'index']);
+    Route::get('/exams/{exam}', [ExamController::class, 'show']);
 
     Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER')->group(function () {
-        Route::post('/exams',[ExamController::class,'store']);
-        Route::put('/exams/{exam}',[ExamController::class,'update']);
-        Route::patch('/exams/{exam}',[ExamController::class,'update']);
-        Route::delete('/exams/{exam}',[ExamController::class,'destroy']);
+        Route::post('/exams', [ExamController::class, 'store']);
+        Route::put('/exams/{exam}', [ExamController::class, 'update']);
+        Route::patch('/exams/{exam}', [ExamController::class, 'update']);
+        Route::delete('/exams/{exam}', [ExamController::class, 'destroy']);
     });
 });
 // Exam Subject
@@ -650,4 +652,35 @@ Route::middleware([
         '/exam-results/{examResult}',
         [ExamResultController::class, 'destroy']
     );
+});
+
+// Assignment and Assignment Submission and learning-materials Routes
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/assignments', [AssignmentController::class, 'index']);
+    Route::get('/assignments/{assignment}', [AssignmentController::class, 'show']);
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER')->group(function () {
+        Route::post('/assignments', [AssignmentController::class, 'store']);
+        Route::put('/assignments/{assignment}', [AssignmentController::class, 'update']);
+        Route::patch('/assignments/{assignment}', [AssignmentController::class, 'update']);
+        Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy']);
+    });
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER,STUDENT')->group(function () {
+        Route::get('/assignment-submissions', [AssignmentSubmissionController::class, 'index']);
+        Route::post('/assignment-submissions', [AssignmentSubmissionController::class, 'store']);
+        Route::get('/assignment-submissions/{assignmentSubmission}', [AssignmentSubmissionController::class, 'show']);
+        Route::put('/assignment-submissions/{assignmentSubmission}', [AssignmentSubmissionController::class, 'update']);
+        Route::patch('/assignment-submissions/{assignmentSubmission}', [AssignmentSubmissionController::class, 'update']);
+        Route::delete('/assignment-submissions/{assignmentSubmission}', [AssignmentSubmissionController::class, 'destroy']);
+    });
+    Route::get('/learning-materials', [LearningMaterialController::class, 'index']);
+    Route::get('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'show']);
+    Route::middleware('role:SUPER_ADMIN,ADMIN,PRINCIPAL,TEACHER')->group(function () {
+        Route::post('/learning-materials', [LearningMaterialController::class, 'store']);
+        Route::put('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'update']);
+        Route::patch('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'update']);
+        Route::post('/learning-materials/{learningMaterial}/publish', [LearningMaterialController::class, 'publish']);
+        Route::post('/learning-materials/{learningMaterial}/unpublish', [LearningMaterialController::class, 'unpublish']);
+        Route::delete('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'destroy']);
+    });
 });
