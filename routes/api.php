@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\ExamResult\ExamResultController;
 use App\Http\Controllers\Api\Assignment\AssignmentController;
 use App\Http\Controllers\Api\AssignmentSubmission\AssignmentSubmissionController;
 use App\Http\Controllers\Api\LearningMaterial\LearningMaterialController;
+use App\Http\Controllers\Api\FeeType\FeeTypeController;
+use App\Http\Controllers\Api\StudentFee\StudentFeeController;
 
 //  Route for Auth
 Route::prefix('auth')->group(function () {
@@ -289,3 +291,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'destroy']);
     });
 });
+Route::apiResource('fee-types', FeeTypeController::class);
+Route::apiResource('student-fees', StudentFeeController::class);
