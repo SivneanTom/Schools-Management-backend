@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\FeeType\FeeTypeController;
 use App\Http\Controllers\Api\StudentFee\StudentFeeController;
 use App\Http\Controllers\Api\Scholarship\ScholarshipController;
 use App\Http\Controllers\Api\StudentScholarship\StudentScholarshipController;
+use App\Http\Controllers\Api\Invoice\InvoiceController;
+use App\Http\Controllers\Api\InvoiceItem\InvoiceItemController;
 //  Route for Auth
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -299,3 +301,8 @@ Route::apiResource('student-fees', StudentFeeController::class);
 // Sholarship and Student Scholarship Routes
 Route::apiResource('scholarships', ScholarshipController::class);
 Route::apiResource('student-scholarships', StudentScholarshipController::class);
+
+// Invoices Routes
+Route::apiResource('invoices',InvoiceController::class);
+
+Route::apiResource('invoice-items', InvoiceItemController::class);
