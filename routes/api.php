@@ -30,7 +30,8 @@ use App\Http\Controllers\Api\AssignmentSubmission\AssignmentSubmissionController
 use App\Http\Controllers\Api\LearningMaterial\LearningMaterialController;
 use App\Http\Controllers\Api\FeeType\FeeTypeController;
 use App\Http\Controllers\Api\StudentFee\StudentFeeController;
-
+use App\Http\Controllers\Api\Scholarship\ScholarshipController;
+use App\Http\Controllers\Api\StudentScholarship\StudentScholarshipController;
 //  Route for Auth
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -291,5 +292,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/learning-materials/{learningMaterial}', [LearningMaterialController::class, 'destroy']);
     });
 });
+// Fee Types and Student Fees Routes
 Route::apiResource('fee-types', FeeTypeController::class);
 Route::apiResource('student-fees', StudentFeeController::class);
+
+// Sholarship and Student Scholarship Routes
+Route::apiResource('scholarships', ScholarshipController::class);
+Route::apiResource('student-scholarships', StudentScholarshipController::class);
