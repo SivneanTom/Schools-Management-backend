@@ -33,7 +33,7 @@ class StoreEnrollmentRequest extends FormRequest
             'status' => [
                 'sometimes',
                 'string',
-                Rule::in(['ACTIVE', 'COMPLETED', 'TRANSFERRED', 'WITHDRAWN']),
+                Rule::in(['ACTIVE', 'COMPLETED', 'DROPPED', 'WITHDRAWN']),
             ],
         ];
     }

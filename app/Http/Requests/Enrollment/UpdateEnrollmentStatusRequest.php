@@ -18,7 +18,7 @@ class UpdateEnrollmentStatusRequest extends FormRequest
             'status' => [
                 'required',
                 'string',
-                Rule::in(['ACTIVE', 'COMPLETED', 'TRANSFERRED', 'WITHDRAWN']),
+                Rule::in(['ACTIVE', 'COMPLETED', 'DROPPED', 'WITHDRAWN']),
             ],
         ];
     }
