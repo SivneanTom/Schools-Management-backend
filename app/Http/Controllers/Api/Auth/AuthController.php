@@ -12,9 +12,8 @@ class AuthController extends Controller
 {
     public function __construct(
         private readonly AuthService $authService
-    ) {
-    }
-      
+    ) {}
+
     //  Login 
 
     public function login(LoginRequest $request): JsonResponse
@@ -26,9 +25,9 @@ class AuthController extends Controller
         );
 
         return response()->json([
-            'success'=>true,
-            'message'=>'Login Successfully.',
-            'data'=> [
+            'success' => true,
+            'message' => 'Login Successfully.',
+            'data' => [
                 'accessToken' => $result['token'],
                 'user' => $result['user'],
             ],
@@ -37,28 +36,51 @@ class AuthController extends Controller
 
     // Me 
 
-    public function me(Request $request) : JsonResponse 
-
+    public function me(Request $request): JsonResponse
     {
+        $user = $request->user()->load('role');
+
         return response()->json([
             'success' => true,
-            'data' => $request->user()->load('role'),
+
+            'data' => [
+                'id' => $user->id,
+
+                'username' => $user->username,
+
+                'email' => $user->email,
+
+                'preferredLanguage' =>
+                $user->preferred_language,
+
+                'status' =>
+                $user->status,
+
+                'role' => [
+                    'code' =>
+                    $user->role->code,
+
+                    'nameKm' =>
+                    $user->role->name_km,
+
+                    'nameEn' =>
+                    $user->role->name_en,
+                ],
+            ],
         ]);
-
     }
-
     // Logout
 
-    public function logout(Request $request) : JsonResponse {
+    public function logout(Request $request): JsonResponse
+    {
 
         $request->user()
-                ->currentAccessToken()
-                ?->delete();
+            ->currentAccessToken()
+            ?->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Loged out Successfully.',
         ]);
     }
-
 }

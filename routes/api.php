@@ -34,6 +34,10 @@ use App\Http\Controllers\Api\Scholarship\ScholarshipController;
 use App\Http\Controllers\Api\StudentScholarship\StudentScholarshipController;
 use App\Http\Controllers\Api\Invoice\InvoiceController;
 use App\Http\Controllers\Api\InvoiceItem\InvoiceItemController;
+use App\Http\Controllers\Api\PaymentMethod\PaymentMethodController;
+use App\Http\Controllers\Api\Payment\PaymentController;
+use App\Http\Controllers\Api\ReceiptController;
+
 //  Route for Auth
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -132,6 +136,7 @@ Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(f
     Route::get('/grades/{grade}', [GradeController::class, 'show']);
     Route::patch('/grades/{grade}', [GradeController::class, 'update']);
     Route::patch('/grades/{grade}/status', [GradeController::class, 'updateStatus']);
+    Route::delete('/grades/{grade}', [GradeController::class, 'destroy']);
 });
 
 // Route for Class
@@ -303,6 +308,15 @@ Route::apiResource('scholarships', ScholarshipController::class);
 Route::apiResource('student-scholarships', StudentScholarshipController::class);
 
 // Invoices Routes
-Route::apiResource('invoices',InvoiceController::class);
+Route::apiResource('invoices', InvoiceController::class);
 
 Route::apiResource('invoice-items', InvoiceItemController::class);
+
+Route::apiResource('payment-methods', PaymentMethodController::class);
+Route::apiResource('payments', PaymentController::class);
+Route::prefix('receipts')->group(function () {
+
+Route::get('/', [  ReceiptController::class,'index']);
+Route::post('/', [ ReceiptController::class,'store']);
+Route::get('/{id}', [ ReceiptController::class, 'show' ]);
+});

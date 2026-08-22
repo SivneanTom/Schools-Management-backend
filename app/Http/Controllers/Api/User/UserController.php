@@ -30,19 +30,19 @@ class UserController extends Controller
             )
             ->when(
                 $request->filled('status'),
-                fn ($query) =>
-                    $query->where('status', $request->status)
+                fn($query) =>
+                $query->where('status', $request->status)
             )
             ->when(
                 $request->filled('role'),
                 function ($query) use ($request) {
                     $query->whereHas(
                         'role',
-                        fn ($roleQuery) =>
-                            $roleQuery->where(
-                                'code',
-                                $request->role
-                            )
+                        fn($roleQuery) =>
+                        $roleQuery->where(
+                            'code',
+                            $request->role
+                        )
                     );
                 }
             )
@@ -117,6 +117,37 @@ class UserController extends Controller
             'success' => true,
             'message' => 'User status updated successfully.',
             'data' => $user->load('role'),
+        ]);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user()->load('role');
+
+        return response()->json([
+            'success' => true,
+
+            'data' => [
+                'id' => $user->id,
+
+                'username' => $user->username,
+
+                'email' => $user->email,
+
+                'preferredLanguage' =>
+                $user->preferred_language,
+
+                'role' => [
+                    'code' =>
+                    $user->role->code,
+
+                    'nameKm' =>
+                    $user->role->name_km,
+
+                    'nameEn' =>
+                    $user->role->name_en,
+                ],
+            ],
         ]);
     }
 }

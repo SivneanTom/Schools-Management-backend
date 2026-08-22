@@ -29,8 +29,8 @@ class GradeController extends Controller
 
                     $search =
                         $request
-                            ->string('search')
-                            ->toString();
+                        ->string('search')
+                        ->toString();
 
                     $query->where(function ($query) use ($search) {
 
@@ -56,11 +56,11 @@ class GradeController extends Controller
 
             ->when(
                 $request->filled('status'),
-                fn ($query) =>
-                    $query->where(
-                        'status',
-                        $request->status
-                    )
+                fn($query) =>
+                $query->where(
+                    'status',
+                    $request->status
+                )
             )
 
             ->orderByRaw(
@@ -75,22 +75,22 @@ class GradeController extends Controller
             'success' => true,
 
             'data' =>
-                GradeListResource::collection(
-                    $grades->items()
-                ),
+            GradeListResource::collection(
+                $grades->items()
+            ),
 
             'pagination' => [
                 'page' =>
-                    $grades->currentPage() - 1,
+                $grades->currentPage() - 1,
 
                 'size' =>
-                    $grades->perPage(),
+                $grades->perPage(),
 
                 'totalElements' =>
-                    $grades->total(),
+                $grades->total(),
 
                 'totalPages' =>
-                    $grades->lastPage(),
+                $grades->lastPage(),
             ],
         ]);
     }
@@ -108,10 +108,10 @@ class GradeController extends Controller
             'success' => true,
 
             'message' =>
-                'Grade created successfully.',
+            'Grade created successfully.',
 
             'data' =>
-                new GradeResource($grade),
+            new GradeResource($grade),
         ], 201);
     }
 
@@ -123,7 +123,7 @@ class GradeController extends Controller
             'success' => true,
 
             'data' =>
-                new GradeResource($grade),
+            new GradeResource($grade),
         ]);
     }
 
@@ -142,26 +142,26 @@ class GradeController extends Controller
             'success' => true,
 
             'message' =>
-                'Grade updated successfully.',
+            'Grade updated successfully.',
 
             'data' => [
                 'id' =>
-                    $grade->id,
+                $grade->id,
 
                 'code' =>
-                    $grade->code,
+                $grade->code,
 
                 'nameKm' =>
-                    $grade->name_km,
+                $grade->name_km,
 
                 'nameEn' =>
-                    $grade->name_en,
+                $grade->name_en,
 
                 'orderNo' =>
-                    $grade->order_no,
+                $grade->order_no,
 
                 'status' =>
-                    $grade->status,
+                $grade->status,
             ],
         ]);
     }
@@ -181,15 +181,25 @@ class GradeController extends Controller
             'success' => true,
 
             'message' =>
-                'Grade status updated successfully.',
+            'Grade status updated successfully.',
 
             'data' => [
                 'id' =>
-                    $grade->id,
+                $grade->id,
 
                 'status' =>
-                    $grade->status,
+                $grade->status,
             ],
+        ]);
+    }
+
+    public function destroy(Grade $grade): JsonResponse
+    {
+        $this->gradeService->delete($grade);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Grade deleted successfully.',
         ]);
     }
 }

@@ -17,16 +17,16 @@ class GradeService
                 ),
 
                 'name_km' =>
-                    $data['nameKm'],
+                $data['nameKm'],
 
                 'name_en' =>
-                    $data['nameEn'],
+                $data['nameEn'],
 
                 'order_no' =>
-                    $data['orderNo'] ?? null,
+                $data['orderNo'] ?? null,
 
                 'status' =>
-                    $data['status'] ?? 'ACTIVE',
+                $data['status'] ?? 'ACTIVE',
             ]);
         });
     }
@@ -78,6 +78,18 @@ class GradeService
 
             $grade->update([
                 'status' => $status,
+            ]);
+
+            return $grade;
+        });
+    }
+
+    public function delete(Grade $grade): Grade
+    {
+        return DB::transaction(function () use ($grade) {
+
+            $grade->update([
+                'status' => 'INACTIVE'
             ]);
 
             return $grade;

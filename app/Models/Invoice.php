@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Payment;
 
 class Invoice extends Model
 {
@@ -22,22 +23,31 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'issued_date'=>'date',
-        'due_date'=>'date',
-        'subtotal'=>'decimal:2',
-        'discount_total'=>'decimal:2',
-        'total_amount'=>'decimal:2'
+        'issued_date' => 'date',
+        'due_date' => 'date',
+        'subtotal' => 'decimal:2',
+        'discount_total' => 'decimal:2',
+        'total_amount' => 'decimal:2'
     ];
 
-    public function student(){
+    public function student()
+    {
         return $this->belongsTo(Student::class);
     }
 
-    public function academicYear(){
+    public function academicYear()
+    {
         return $this->belongsTo(AcademicYear::class);
     }
 
-    public function items(){
+    public function items()
+    {
         return $this->hasMany(InvoiceItem::class);
+    }
+    public function payments()
+    {
+        return $this->hasMany(
+            Payment::class
+        );
     }
 }

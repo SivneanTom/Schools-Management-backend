@@ -12,16 +12,22 @@ use App\Models\SchoolClass;
 use App\Services\SchoolClass\SchoolClassService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\Grade;
 
 class SchoolClassController extends Controller
 {
+
     public function __construct(
         private readonly SchoolClassService $schoolClassService
     ) {}
 
+
+
     public function index(Request $request): JsonResponse
     {
+
         $classes = SchoolClass::query()
+
             ->with([
                 'grade',
                 'academicYear',
@@ -31,11 +37,14 @@ class SchoolClassController extends Controller
             ->when(
                 $request->filled('search'),
                 function ($query) use ($request) {
-                    $search = $request
+
+                    $search =
+                        $request
                         ->string('search')
                         ->toString();
 
                     $query->where(function ($query) use ($search) {
+
                         $query
                             ->where(
                                 'name_km',
@@ -51,116 +60,169 @@ class SchoolClassController extends Controller
                 }
             )
 
+
             ->when(
                 $request->filled('gradeId'),
-                fn ($query) =>
-                    $query->where(
-                        'grade_id',
-                        $request->integer('gradeId')
-                    )
+                fn($query) =>
+                $query->where(
+                    'grade_id',
+                    $request->integer('gradeId')
+                )
             )
+
 
             ->when(
                 $request->filled('academicYearId'),
-                fn ($query) =>
-                    $query->where(
-                        'academic_year_id',
-                        $request->integer('academicYearId')
-                    )
+                fn($query) =>
+                $query->where(
+                    'academic_year_id',
+                    $request->integer('academicYearId')
+                )
             )
+
 
             ->when(
                 $request->filled('homeroomTeacherId'),
-                fn ($query) =>
-                    $query->where(
-                        'homeroom_teacher_id',
-                        $request->integer('homeroomTeacherId')
-                    )
+                fn($query) =>
+                $query->where(
+                    'homeroom_teacher_id',
+                    $request->integer('homeroomTeacherId')
+                )
             )
+
 
             ->when(
                 $request->filled('status'),
-                fn ($query) =>
-                    $query->where(
-                        'status',
-                        $request->status
+                fn($query) =>
+                $query->where(
+                    'status',
+                    $request->status
+                )
+            )
+
+            ->orderBy(
+                'academic_year_id',
+                'desc'
+            )
+
+            ->orderBy(
+                Grade::select('order_no')
+                    ->whereColumn(
+                        'grades.id',
+                        'classes.grade_id'
                     )
             )
 
-            ->orderBy('academic_year_id', 'desc')
-            ->orderBy('grade_id')
-            ->orderBy('name_en')
+            ->orderBy(
+                'name_en'
+            )
 
             ->paginate(
                 $request->integer('size', 20)
             );
 
+
+
         return response()->json([
+
             'success' => true,
 
             'data' =>
-                SchoolClassListResource::collection(
-                    $classes->items()
-                ),
+            SchoolClassListResource::collection(
+                $classes->items()
+            ),
 
             'pagination' => [
+
                 'page' =>
-                    $classes->currentPage() - 1,
+                $classes->currentPage() - 1,
 
                 'size' =>
-                    $classes->perPage(),
+                $classes->perPage(),
 
                 'totalElements' =>
-                    $classes->total(),
+                $classes->total(),
 
                 'totalPages' =>
-                    $classes->lastPage(),
+                $classes->lastPage(),
+
             ],
+
         ]);
     }
+
+
+
+
 
     public function store(
         StoreSchoolClassRequest $request
     ): JsonResponse {
+
 
         $schoolClass =
             $this->schoolClassService->create(
                 $request->validated()
             );
 
+
         return response()->json([
+
             'success' => true,
 
             'message' =>
-                'Class created successfully.',
+            'Class created successfully.',
 
             'data' =>
-                new SchoolClassResource($schoolClass),
+            new SchoolClassResource(
+                $schoolClass
+            ),
+
         ], 201);
     }
+
+
+
+
 
     public function show(
         SchoolClass $schoolClass
     ): JsonResponse {
 
+
         $schoolClass->load([
+
             'grade',
+
             'academicYear',
+
             'homeroomTeacher',
+
         ]);
 
+
+
         return response()->json([
+
             'success' => true,
 
             'data' =>
-                new SchoolClassResource($schoolClass),
+            new SchoolClassResource(
+                $schoolClass
+            ),
+
         ]);
     }
+
+
+
+
 
     public function update(
         UpdateSchoolClassRequest $request,
         SchoolClass $schoolClass
     ): JsonResponse {
+
 
         $schoolClass =
             $this->schoolClassService->update(
@@ -168,21 +230,32 @@ class SchoolClassController extends Controller
                 $request->validated()
             );
 
+
+
         return response()->json([
+
             'success' => true,
 
             'message' =>
-                'Class updated successfully.',
+            'Class updated successfully.',
 
             'data' =>
-                new SchoolClassResource($schoolClass),
+            new SchoolClassResource(
+                $schoolClass
+            ),
+
         ]);
     }
+
+
+
+
 
     public function updateStatus(
         UpdateSchoolClassStatusRequest $request,
         SchoolClass $schoolClass
     ): JsonResponse {
+
 
         $schoolClass =
             $this->schoolClassService->updateStatus(
@@ -190,16 +263,24 @@ class SchoolClassController extends Controller
                 $request->validated('status')
             );
 
+
         return response()->json([
+
             'success' => true,
 
             'message' =>
-                'Class status updated successfully.',
+            'Class status updated successfully.',
 
             'data' => [
-                'id' => $schoolClass->id,
-                'status' => $schoolClass->status,
+
+                'id' =>
+                $schoolClass->id,
+
+                'status' =>
+                $schoolClass->status,
+
             ],
+
         ]);
     }
 }
