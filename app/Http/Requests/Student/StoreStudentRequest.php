@@ -106,12 +106,14 @@ class StoreStudentRequest extends FormRequest
                 'nullable',
                 'date',
             ],
-
+            
             'status' => [
-                'nullable',
+                'sometimes',
                 Rule::in([
                     'ACTIVE',
                     'INACTIVE',
+                    'GRADUATED',
+                    'SUSPENDED',
                 ]),
             ],
 

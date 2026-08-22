@@ -73,6 +73,17 @@ Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN'])->group(function ()
         Route::get('/students/{student}', [StudentController::class, 'show']);
         Route::patch('/students/{student}', [StudentController::class, 'update']);
         Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus']);
+        Route::get('/students/status', [
+            StudentController::class,
+            'status'
+        ]);
+
+        Route::apiResource(
+            'students',
+            StudentController::class
+        )->where([
+            'student' => '[0-9]+',
+        ]);
     });
 });
 
@@ -316,7 +327,7 @@ Route::apiResource('payment-methods', PaymentMethodController::class);
 Route::apiResource('payments', PaymentController::class);
 Route::prefix('receipts')->group(function () {
 
-Route::get('/', [  ReceiptController::class,'index']);
-Route::post('/', [ ReceiptController::class,'store']);
-Route::get('/{id}', [ ReceiptController::class, 'show' ]);
+    Route::get('/', [ReceiptController::class, 'index']);
+    Route::post('/', [ReceiptController::class, 'store']);
+    Route::get('/{id}', [ReceiptController::class, 'show']);
 });

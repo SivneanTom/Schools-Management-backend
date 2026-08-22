@@ -129,4 +129,12 @@ class StudentController extends Controller
             'data' => new StudentResource($student),
         ]);
     }
+
+    public function status()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => Student::STATUSES,
+        ]);
+    }
 }

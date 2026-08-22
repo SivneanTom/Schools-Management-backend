@@ -11,6 +11,18 @@ class Student extends Model
 {
     use HasFactory;
 
+    public const STATUS_ACTIVE = 'ACTIVE';
+    public const STATUS_INACTIVE = 'INACTIVE';
+    public const STATUS_GRADUATED = 'GRADUATED';
+    public const STATUS_SUSPENDED = 'SUSPENDED';
+
+    public const STATUSES = [
+        self::STATUS_ACTIVE,
+        self::STATUS_INACTIVE,
+        self::STATUS_GRADUATED,
+        self::STATUS_SUSPENDED,
+    ];
+
     protected $fillable = [
         'user_id',
         'student_code',
@@ -35,28 +47,23 @@ class Student extends Model
         ];
     }
 
-    // Add User relate to student
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    //  Add Parent relate to Student
-
-    public function parents() : BelongsToMany {
-
+    public function parents(): BelongsToMany
+    {
         return $this->belongsToMany(
             ParentProfile::class,
             'student_parents',
             'student_id',
             'parent_id'
         )
-        ->withPivot([
-            'relationship',
-            'is_primary',
-        ])
-        ->withTimestamps();
+            ->withPivot([
+                'relationship',
+                'is_primary',
+            ])
+            ->withTimestamps();
     }
-
 }

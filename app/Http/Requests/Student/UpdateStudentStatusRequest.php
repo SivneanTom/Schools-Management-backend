@@ -29,6 +29,7 @@ class UpdateStudentStatusRequest extends FormRequest
                 Rule::in([
                     'ACTIVE',
                     'INACTIVE',
+                    'GRADUATED',
                     'SUSPENDED',
                 ]),
             ],
