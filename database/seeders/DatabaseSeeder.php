@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
 
             GradeSubjectSeeder::class,
             PaymentMethodSeeder::class,
+            FeeTypeSeeder::class,
         ]);
     }
 }

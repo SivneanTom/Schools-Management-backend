@@ -34,7 +34,7 @@ class FeeTypeService
         }
 
         return $query
-            ->orderBy('code')
+            ->orderBy('id', 'asc')
             ->paginate((int) ($filters['per_page'] ?? 20));
     }
 
