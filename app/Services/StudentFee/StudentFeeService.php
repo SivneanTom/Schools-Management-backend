@@ -73,20 +73,46 @@ class StudentFeeService
         });
     }
 
-    public function update(StudentFee $studentFee, array $data): StudentFee
-    {
-        return DB::transaction(function () use ($studentFee, $data) {
-            $studentId = $data['student_id'] ?? $studentFee->student_id;
-            $feeTypeId = $data['fee_type_id'] ?? $studentFee->fee_type_id;
-            $academicYearId = $data['academic_year_id'] ?? $studentFee->academic_year_id;
+    public function update(
+        StudentFee $studentFee,
+        array $data
+    ): StudentFee {
+        return DB::transaction(function () use (
+            $studentFee,
+            $data
+        ) {
+            $studentId =
+                $data['student_id']
+                ?? $studentFee->student_id;
+
+            $feeTypeId =
+                $data['fee_type_id']
+                ?? $studentFee->fee_type_id;
+
+            $academicYearId =
+                $data['academic_year_id']
+                ?? $studentFee->academic_year_id;
 
             if (isset($data['fee_type_id'])) {
-                $feeType = FeeType::findOrFail($feeTypeId);
+                $feeType = FeeType::findOrFail(
+                    $feeTypeId
+                );
 
                 if (!$feeType->is_active) {
                     throw ValidationException::withMessages([
-                        'fee_type_id' => 'The selected fee type is inactive.',
+                        'fee_type_id' =>
+                        'The selected fee type is inactive.',
                     ]);
+                }
+
+                /*
+             * If fee type changes and amount
+             * was not manually supplied,
+             * use the new fee type default amount.
+             */
+                if (!array_key_exists('amount', $data)) {
+                    $data['amount'] =
+                        $feeType->default_amount;
                 }
             }
 
@@ -99,7 +125,13 @@ class StudentFeeService
 
             $studentFee->update($data);
 
-            return $studentFee->refresh()->load(['student', 'feeType', 'academicYear']);
+            return $studentFee
+                ->refresh()
+                ->load([
+                    'student',
+                    'feeType',
+                    'academicYear',
+                ]);
         });
     }
 

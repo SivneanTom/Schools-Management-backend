@@ -14,6 +14,7 @@ use App\Services\Parent\ParentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Resources\Parent\ParentListResource;
+use Illuminate\Support\Facades\Gate;
 
 class ParentController extends Controller
 {
@@ -23,6 +24,7 @@ class ParentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        Gate::authorize('viewAny', ParentProfile::class);
         $parents = ParentProfile::query()
             ->when(
                 $request->filled('search'),
@@ -79,9 +81,8 @@ class ParentController extends Controller
         ]);
     }
 
-    public function store(
-        StoreParentRequest $request
-    ): JsonResponse {
+    public function store( StoreParentRequest $request): JsonResponse {
+        Gate::authorize('create', ParentProfile::class);
 
         $parent = $this->parentService->create(
             $request->validated()
@@ -94,10 +95,9 @@ class ParentController extends Controller
         ], 201);
     }
 
-    public function show(
-        ParentProfile $parent
-    ): JsonResponse {
-
+    public function show( ParentProfile $parent ): JsonResponse 
+    {
+        Gate::authorize('view', $parent);
         $parent->load([
             'user.role',
             'students',
@@ -152,11 +152,9 @@ class ParentController extends Controller
         ]);
     }
 
-    public function updateStatus(
-        UpdateParentStatusRequest $request,
-        ParentProfile $parent
-    ): JsonResponse {
-
+    public function updateStatus( UpdateParentStatusRequest $request, ParentProfile $parent ): JsonResponse 
+    {
+        Gate::authorize('update', $parent);
         $parent = $this->parentService->updateStatus(
             $parent,
             $request->validated('status')
@@ -173,11 +171,8 @@ class ParentController extends Controller
             ],
         ]);
     }
-    public function attachStudent(
-        AttachStudentRequest $request,
-        ParentProfile $parent,
-        Student $student
-    ): JsonResponse {
+    public function attachStudent( AttachStudentRequest $request, ParentProfile $parent,Student $student): JsonResponse 
+    {
 
         $this->parentService->attachStudent(
             $parent,
@@ -200,11 +195,8 @@ class ParentController extends Controller
         ]);
     }
 
-    public function detachStudent(
-        ParentProfile $parent,
-        Student $student
-    ): JsonResponse {
-
+    public function detachStudent(ParentProfile $parent,Student $student): JsonResponse {
+        Gate::authorize('delete', $parent);
         $this->parentService->detachStudent(
             $parent,
             $student

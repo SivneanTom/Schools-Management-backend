@@ -45,9 +45,14 @@ class FeeTypeService
         });
     }
 
-    public function update(FeeType $feeType, array $data): FeeType
-    {
-        return DB::transaction(function () use ($feeType, $data) {
+    public function update(
+        FeeType $feeType,
+        array $data
+    ): FeeType {
+        return DB::transaction(function () use (
+            $feeType,
+            $data
+        ) {
             $feeType->update($data);
 
             return $feeType->refresh();

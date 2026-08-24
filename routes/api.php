@@ -38,7 +38,7 @@ use App\Http\Controllers\Api\PaymentMethod\PaymentMethodController;
 use App\Http\Controllers\Api\Payment\PaymentController;
 use App\Http\Controllers\Api\ReceiptController;
 
-//  Route for Auth
+// Auth
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::middleware('auth:sanctum')->group(function () {
@@ -47,48 +47,159 @@ Route::prefix('auth')->group(function () {
     });
 });
 // Test Super Admin
-Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN'])->get('/test/super-admin', function () {
-    return response()->json(['success' => true, 'message' => 'You are allow as SUPER_ADMIN.']);
+Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN',])->get('/test/super-admin', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'You are allowed as SUPER_ADMIN.',
+    ]);
 });
-
-//  // Role APIs
-Route::middleware('auth:sanctum')->group(function () {
+// Role APIs
+Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN',])->group(function () {
     Route::get('/roles', [RoleController::class, 'index']);
     Route::get('/roles/{role}', [RoleController::class, 'show']);
 });
-
-// User
-
-Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN'])->group(function () {
+// User APIs
+Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN',])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-
-    //  Route For Student
-
-    Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN'])->group(function () {
-        Route::post('/students', [StudentController::class, 'store']);
-        Route::get('/students', [StudentController::class, 'index']);
-        Route::get('/students/{student}', [StudentController::class, 'show']);
-        Route::patch('/students/{student}', [StudentController::class, 'update']);
-        Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus']);
-        Route::get('/students/status', [
-            StudentController::class,
-            'status'
-        ]);
-
-        Route::apiResource(
-            'students',
-            StudentController::class
-        )->where([
-            'student' => '[0-9]+',
-        ]);
-    });
 });
 
-// Route FOR Parents
+// Student Routes
+Route::middleware('auth:sanctum')->group(function () {
 
+    // Student own profile
+    Route::get('/students/me', [
+        StudentController::class,
+        'me'
+    ])->middleware('role:STUDENT');
+
+    // Student own parents
+    Route::get('/students/me/parents', [
+        StudentController::class,
+        'myParents'
+    ])->middleware('role:STUDENT');
+
+    // Student status lookup/list
+    Route::get('/students/status', [
+        StudentController::class,
+        'status'
+    ])->middleware(
+        'role:SUPER_ADMIN,ADMIN,TEACHER,ACCOUNTANT,LIBRARIAN'
+    );
+
+    // Student list
+    Route::get('/students', [
+        StudentController::class,
+        'index'
+    ])->middleware(
+        'role:SUPER_ADMIN,ADMIN,TEACHER,ACCOUNTANT,LIBRARIAN'
+    );
+
+    // Student detail
+    Route::get('/students/{student}', [
+        StudentController::class,
+        'show'
+    ])
+        ->whereNumber('student')
+        ->middleware(
+            'role:SUPER_ADMIN,ADMIN,TEACHER,ACCOUNTANT,LIBRARIAN,PARENT'
+        );
+
+    // Create student
+    Route::post('/students', [
+        StudentController::class,
+        'store'
+    ])->middleware(
+        'role:SUPER_ADMIN,ADMIN'
+    );
+
+    // Update student
+    Route::patch('/students/{student}', [
+        StudentController::class,
+        'update'
+    ])
+        ->whereNumber('student')
+        ->middleware(
+            'role:SUPER_ADMIN,ADMIN'
+        );
+
+    // Update student status
+    Route::patch('/students/{student}/status', [
+        StudentController::class,
+        'updateStatus'
+    ])
+        ->whereNumber('student')
+        ->middleware(
+            'role:SUPER_ADMIN,ADMIN'
+        );
+    Route::get('/students/me/enrollments', [
+        StudentController::class,
+        'myEnrollments'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/attendance', [
+        StudentController::class,
+        'myAttendance'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/exam-results', [
+        StudentController::class,
+        'myExamResults'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/assignments', [
+        StudentController::class,
+        'myAssignments'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/submissions', [
+        StudentController::class,
+        'mySubmissions'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/fees', [
+        StudentController::class,
+        'myFees'
+    ])->middleware('role:STUDENT');
+
+    Route::get('/students/me/scholarships', [
+        StudentController::class,
+        'myScholarships'
+    ])->middleware('role:STUDENT');
+
+    // Student own timetable
+    Route::get('/students/me/timetable', [
+        StudentController::class,
+        'myTimetable'
+    ])->middleware('role:STUDENT');
+
+    // Student own learning materials
+    Route::get('/students/me/learning-materials', [
+        StudentController::class,
+        'myLearningMaterials'
+    ])->middleware('role:STUDENT');
+
+    // Student own invoices
+    Route::get('/students/me/invoices', [
+        StudentController::class,
+        'myInvoices'
+    ])->middleware('role:STUDENT');
+
+    // Student own payments
+    Route::get('/students/me/payments', [
+        StudentController::class,
+        'myPayments'
+    ])->middleware('role:STUDENT');
+
+    // Student own receipts
+    Route::get('/students/me/receipts', [
+        StudentController::class,
+        'myReceipts'
+    ])->middleware('role:STUDENT');
+});
+// Route FOR Parents
 Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(function () {
     Route::get('/parents', [ParentController::class, 'index']);
     Route::post('/parents', [ParentController::class, 'store']);
@@ -98,9 +209,7 @@ Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(f
     Route::post('/parents/{parent}/students/{student}', [ParentController::class, 'attachStudent']);
     Route::delete('/parents/{parent}/students/{student}', [ParentController::class, 'detachStudent']);
 });
-
 // Route For Teacher
-
 Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(function () {
     Route::get('/teachers', [TeacherController::class, 'index']);
     Route::post('/teachers', [TeacherController::class, 'store']);
@@ -108,9 +217,7 @@ Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(f
     Route::patch('/teachers/{teacher}', [TeacherController::class, 'update']);
     Route::patch('/teachers/{teacher}/status', [TeacherController::class, 'updateStatus']);
 });
-
 // Staff
-
 Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(function () {
     Route::get('/staff', [StaffController::class, 'index']);
     Route::post('/staff', [StaffController::class, 'store']);
@@ -326,7 +433,6 @@ Route::apiResource('invoice-items', InvoiceItemController::class);
 Route::apiResource('payment-methods', PaymentMethodController::class);
 Route::apiResource('payments', PaymentController::class);
 Route::prefix('receipts')->group(function () {
-
     Route::get('/', [ReceiptController::class, 'index']);
     Route::post('/', [ReceiptController::class, 'store']);
     Route::get('/{id}', [ReceiptController::class, 'show']);

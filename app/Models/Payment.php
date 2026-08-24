@@ -31,20 +31,32 @@ class Payment extends Model
     public function invoice()
     {
         return $this->belongsTo(
-            Invoice::class
+            Invoice::class,
+            'invoice_id'
         );
     }
+
     public function paymentMethod()
     {
         return $this->belongsTo(
-            PaymentMethod::class
+            PaymentMethod::class,
+            'payment_method_id'
         );
     }
+
     public function receivedBy()
     {
         return $this->belongsTo(
             Staff::class,
             'received_by_staff_id'
+        );
+    }
+
+    public function receipt()
+    {
+        return $this->hasOne(
+            Receipt::class,
+            'payment_id'
         );
     }
 }

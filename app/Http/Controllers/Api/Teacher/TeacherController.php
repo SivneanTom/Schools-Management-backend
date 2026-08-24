@@ -12,6 +12,7 @@ use App\Models\Teacher;
 use App\Services\Teacher\TeacherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class TeacherController extends Controller
 {
@@ -21,8 +22,8 @@ class TeacherController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        Gate::authorize('viewAny', Teacher::class);
         $teachers = Teacher::query()
-
             ->when(
                 $request->filled('search'),
                 function ($query) use ($request) {
@@ -95,7 +96,6 @@ class TeacherController extends Controller
                     $request->gender
                 )
             )
-
             ->when(
                 $request->filled('status'),
                 fn($query) =>
@@ -104,7 +104,6 @@ class TeacherController extends Controller
                     $request->status
                 )
             )
-
             ->latest()
             ->paginate(
                 $request->integer('size', 10)
@@ -112,11 +111,9 @@ class TeacherController extends Controller
 
         return response()->json([
             'success' => true,
-
             'data' => TeacherListResource::collection(
                 $teachers->items()
             ),
-
             'pagination' => [
                 'page' =>
                 $teachers->currentPage() - 1,
@@ -133,14 +130,12 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function store(
-        StoreTeacherRequest $request
-    ): JsonResponse {
+    public function store( StoreTeacherRequest $request): JsonResponse {
 
+        Gate::authorize('create', Teacher::class);
         $teacher = $this->teacherService->create(
             $request->validated()
         );
-
         return response()->json([
             'success' => true,
             'message' => 'Teacher created successfully.',
@@ -148,10 +143,8 @@ class TeacherController extends Controller
         ], 201);
     }
 
-    public function show(
-        Teacher $teacher
-    ): JsonResponse {
-
+    public function show(Teacher $teacher): JsonResponse {
+        Gate::authorize('view', $teacher);
         $teacher->load('user.role');
 
         return response()->json([
@@ -160,11 +153,8 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function update(
-        UpdateTeacherRequest $request,
-        Teacher $teacher
-    ): JsonResponse {
-
+    public function update( UpdateTeacherRequest $request,Teacher $teacher): JsonResponse {
+        Gate::authorize('update', $teacher);
         $teacher = $this->teacherService->update(
             $teacher,
             $request->validated()
@@ -186,11 +176,8 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function updateStatus(
-        UpdateTeacherStatusRequest $request,
-        Teacher $teacher
+    public function updateStatus(UpdateTeacherStatusRequest $request,Teacher $teacher
     ): JsonResponse {
-
         $teacher =
             $this->teacherService->updateStatus(
                 $teacher,

@@ -32,22 +32,33 @@ class Invoice extends Model
 
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(
+            Student::class,
+            'student_id'
+        );
     }
 
     public function academicYear()
     {
-        return $this->belongsTo(AcademicYear::class);
+        return $this->belongsTo(
+            AcademicYear::class,
+            'academic_year_id'
+        );
     }
 
     public function items()
     {
-        return $this->hasMany(InvoiceItem::class);
+        return $this->hasMany(
+            InvoiceItem::class,
+            'invoice_id'
+        );
     }
+
     public function payments()
     {
         return $this->hasMany(
-            Payment::class
+            Payment::class,
+            'invoice_id'
         );
     }
 }

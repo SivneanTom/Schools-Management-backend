@@ -26,13 +26,19 @@ class Timetable extends Model
         ];
     }
 
-    public function teacherAssignment(): BelongsTo
+    public function teacherAssignment()
     {
-        return $this->belongsTo(TeacherAssignment::class);
+        return $this->belongsTo(
+            TeacherAssignment::class,
+            'teacher_assignment_id'
+        );
     }
 
-    public function room(): BelongsTo
+    public function room()
     {
-        return $this->belongsTo(Room::class);
+        return $this->belongsTo(
+            Room::class,
+            'room_id'
+        );
     }
 }

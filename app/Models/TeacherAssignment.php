@@ -26,23 +26,27 @@ class TeacherAssignment extends Model
         ];
     }
 
-    public function teacher(): BelongsTo
+    public function teacher()
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(
+            Teacher::class,
+            'teacher_id'
+        );
     }
 
-    public function schoolClass(): BelongsTo
+    public function schoolClass()
     {
-        return $this->belongsTo(SchoolClass::class, 'class_id');
+        return $this->belongsTo(
+            SchoolClass::class,
+            'class_id'
+        );
     }
 
-    public function subject(): BelongsTo
+    public function subject()
     {
-        return $this->belongsTo(Subject::class);
-    }
-
-    public function semester(): BelongsTo
-    {
-        return $this->belongsTo(Semester::class);
+        return $this->belongsTo(
+            Subject::class,
+            'subject_id'
+        );
     }
 }
