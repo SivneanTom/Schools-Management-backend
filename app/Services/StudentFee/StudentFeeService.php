@@ -7,9 +7,14 @@ use App\Models\StudentFee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class StudentFeeService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function paginate(array $filters = []): LengthAwarePaginator
     {
         $query = StudentFee::query()
@@ -169,5 +174,36 @@ class StudentFeeService
                 'student_fee' => 'This fee type is already assigned to this student for the selected academic year.',
             ]);
         }
+    }
+
+    // Parentn role only
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view fees for your linked child.');
+        }
+
+        return StudentFee::query()
+            ->where('student_id', $studentId)
+            ->with(['feeType', 'academicYear'])
+            ->orderByDesc('due_date')
+            ->get()
+            ->map(fn($f) => [
+                'id' => $f->id,
+                'amount' => $f->amount,
+                'dueDate' => $f->due_date,
+                'status' => $f->status,
+                'feeType' => [
+                    'id' => $f->feeType?->id,
+                    'code' => $f->feeType?->code,
+                    'nameKm' => $f->feeType?->name_km,
+                    'nameEn' => $f->feeType?->name_en,
+                    'frequency' => $f->feeType?->frequency,
+                ],
+                'academicYear' => [
+                    'id' => $f->academicYear?->id,
+                    'name' => $f->academicYear?->name,
+                ],
+            ]);
     }
 }

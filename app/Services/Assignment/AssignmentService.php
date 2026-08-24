@@ -8,9 +8,14 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class AssignmentService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function getAll(array $f = []): LengthAwarePaginator
     {
         $q = Assignment::query()->with('teacherAssignment');
@@ -51,5 +56,80 @@ class AssignmentService
         if ((float)$d['max_score'] <= 0) throw ValidationException::withMessages(['max_score' => ['The maximum score must be greater than zero.']]);
         $ta = TeacherAssignment::findOrFail($d['teacher_assignment_id']);
         if (isset($ta->status) && strtoupper((string)$ta->status) !== 'ACTIVE') throw ValidationException::withMessages(['teacher_assignment_id' => ['The selected teacher assignment is not active.']]);
+    }
+
+    // Parent role only 
+
+    // Parent role only
+    public function getForParentChild(
+        User $user,
+        int $studentId
+    ) {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view your linked child.');
+        }
+
+        $classIds = DB::table('enrollments')
+            ->where('student_id', $studentId)
+            ->where('status', 'ACTIVE')
+            ->pluck('class_id');
+
+        return Assignment::query()
+            ->where('status', 'PUBLISHED')
+            ->whereHas(
+                'teacherAssignment',
+                fn(Builder $q) =>
+                $q->whereIn('class_id', $classIds)
+            )
+            ->with([
+                'teacherAssignment.subject:id,code,name_km,name_en',
+                'teacherAssignment.teacher:id,teacher_code,first_name_km,last_name_km,first_name_en,last_name_en',
+                'teacherAssignment.schoolClass:id,name_km,name_en',
+            ])
+            ->orderByDesc('assigned_at')
+            ->get()
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'titleKm' => $a->title_km,
+                'titleEn' => $a->title_en,
+                'descriptionKm' => $a->description_km,
+                'descriptionEn' => $a->description_en,
+                'assignedAt' => $a->assigned_at,
+                'dueAt' => $a->due_at,
+                'maxScore' => $a->max_score,
+                'status' => $a->status,
+
+                'subject' => $a->teacherAssignment?->subject
+                    ? [
+                        'id' => $a->teacherAssignment->subject->id,
+                        'code' => $a->teacherAssignment->subject->code,
+                        'nameKm' => $a->teacherAssignment->subject->name_km,
+                        'nameEn' => $a->teacherAssignment->subject->name_en,
+                    ]
+                    : null,
+
+                'teacher' => $a->teacherAssignment?->teacher
+                    ? [
+                        'id' => $a->teacherAssignment->teacher->id,
+                        'teacherCode' => $a->teacherAssignment->teacher->teacher_code,
+                        'fullNameKm' => trim(
+                            $a->teacherAssignment->teacher->first_name_km . ' ' .
+                                $a->teacherAssignment->teacher->last_name_km
+                        ),
+                        'fullNameEn' => trim(
+                            $a->teacherAssignment->teacher->first_name_en . ' ' .
+                                $a->teacherAssignment->teacher->last_name_en
+                        ),
+                    ]
+                    : null,
+
+                'class' => $a->teacherAssignment?->schoolClass
+                    ? [
+                        'id' => $a->teacherAssignment->schoolClass->id,
+                        'nameKm' => $a->teacherAssignment->schoolClass->name_km,
+                        'nameEn' => $a->teacherAssignment->schoolClass->name_en,
+                    ]
+                    : null,
+            ]);
     }
 }

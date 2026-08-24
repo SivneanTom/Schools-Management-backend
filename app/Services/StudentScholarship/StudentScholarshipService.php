@@ -8,9 +8,14 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class StudentScholarshipService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function paginate(array $filters = []): LengthAwarePaginator
     {
         $query = StudentScholarship::query()
@@ -90,7 +95,7 @@ class StudentScholarshipService
 
             $awardedAt = Carbon::parse(
                 $data['awarded_at']
-                ?? $studentScholarship->awarded_at->format('Y-m-d')
+                    ?? $studentScholarship->awarded_at->format('Y-m-d')
             );
 
             $this->validateAwardDate($scholarship, $awardedAt);
@@ -156,5 +161,36 @@ class StudentScholarshipService
                 'student_scholarship' => 'This scholarship is already assigned to this student for the selected academic year.',
             ]);
         }
+    }
+    // Parent Role
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view scholarships for your linked child.');
+        }
+
+        return StudentScholarship::query()
+            ->where('student_id', $studentId)
+            ->with(['scholarship', 'academicYear'])
+            ->orderByDesc('awarded_at')
+            ->get()
+            ->map(fn($item) => [
+                'id' => $item->id,
+                'awardedAt' => $item->awarded_at,
+                'status' => $item->status,
+                'scholarship' => [
+                    'id' => $item->scholarship?->id,
+                    'nameKm' => $item->scholarship?->name_km,
+                    'nameEn' => $item->scholarship?->name_en,
+                    'discountType' => $item->scholarship?->discount_type,
+                    'discountValue' => $item->scholarship?->discount_value,
+                    'startDate' => $item->scholarship?->start_date,
+                    'endDate' => $item->scholarship?->end_date,
+                ],
+                'academicYear' => [
+                    'id' => $item->academicYear?->id,
+                    'name' => $item->academicYear?->name,
+                ],
+            ]);
     }
 }

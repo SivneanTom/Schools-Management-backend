@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\InvoiceItem\InvoiceItemController;
 use App\Http\Controllers\Api\PaymentMethod\PaymentMethodController;
 use App\Http\Controllers\Api\Payment\PaymentController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Models\Student;
 
 // Auth
 Route::prefix('auth')->group(function () {
@@ -198,6 +199,100 @@ Route::middleware('auth:sanctum')->group(function () {
         StudentController::class,
         'myReceipts'
     ])->middleware('role:STUDENT');
+});
+// ========================================================
+// Parent Self Service
+// PARENT only
+// ========================================================
+
+Route::middleware([
+    'auth:sanctum',
+    'role:PARENT',
+])->prefix('parents/me')->group(function () {
+
+    // Own Parent profile
+    Route::get(
+        '/',
+        [ParentController::class, 'me']
+    );
+
+    // Own linked children
+    Route::get(
+        '/children',
+        [ParentController::class, 'myChildren']
+    );
+
+    // One linked child
+    Route::get(
+        '/children/{student}',
+        [ParentController::class, 'myChild']
+    )->whereNumber('student');
+
+    // Child enrollment / academic history
+    Route::get(
+        '/children/{student}/enrollments',
+        [ParentController::class, 'childEnrollments']
+    )->whereNumber('student');
+
+    // Child timetable
+    Route::get(
+        '/children/{student}/timetable',
+        [ParentController::class, 'childTimetable']
+    )->whereNumber('student');
+
+    // Child attendance
+    Route::get(
+        '/children/{student}/attendance-records',
+        [ParentController::class, 'childAttendanceRecords']
+    )->whereNumber('student');
+
+    // Child assignments
+    Route::get(
+        '/children/{student}/assignments',
+        [ParentController::class, 'childAssignments']
+    )->whereNumber('student');
+
+    // Child assignment submissions
+    Route::get(
+        '/children/{student}/submissions',
+        [ParentController::class, 'childSubmissions']
+    )->whereNumber('student');
+
+    // Child published exam results
+    Route::get(
+        '/children/{student}/exam-results',
+        [ParentController::class, 'childExamResults']
+    )->whereNumber('student');
+
+    // Child fees
+    Route::get(
+        '/children/{student}/fees',
+        [ParentController::class, 'childFees']
+    )->whereNumber('student');
+
+    // Child scholarships
+    Route::get(
+        '/children/{student}/scholarships',
+        [ParentController::class, 'childScholarships']
+    )->whereNumber('student');
+
+    // Child invoices
+    Route::get(
+        '/children/{student}/invoices',
+        [ParentController::class, 'childInvoices']
+    )->whereNumber('student');
+
+    // Child payment history
+    Route::get(
+        '/children/{student}/payments',
+        [ParentController::class, 'childPayments']
+    )->whereNumber('student');
+
+    // Child receipts
+    Route::get(
+        '/children/{student}/receipts',
+        [ParentController::class, 'childReceipts']
+    )->whereNumber('student');
 });
 // Route FOR Parents
 Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,ADMIN,PRINCIPAL'])->group(function () {

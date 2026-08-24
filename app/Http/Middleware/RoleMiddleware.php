@@ -13,8 +13,7 @@ class RoleMiddleware
         Closure $next,
         string ...$roles
     ): Response {
-
-    //  Check Logged-in user
+        // 1. Check authenticated user
         $user = $request->user();
 
         if (!$user) {
@@ -25,7 +24,7 @@ class RoleMiddleware
             ], 401);
         }
 
-        //  Check Allow roles 
+        // 2. Load user role
         $user->loadMissing('role');
 
         if (!$user->role) {
@@ -33,16 +32,33 @@ class RoleMiddleware
                 'success' => false,
                 'code' => 'ROLE_NOT_FOUND',
                 'message' => 'User role was not found.',
-            ] , 403 );
+            ], 403);
         }
 
-        // Allowed? ( Y -> Continuse  , N -> 403 )
+        // 3. Normalize logged-in user's role
+        $userRole = strtoupper(
+            trim($user->role->code)
+        );
 
-        if (!in_array($user->role->code, $roles, true)) {
+        // 4. Normalize allowed roles from route
+        $allowedRoles = array_map(
+            fn ($role) => strtoupper(
+                trim($role)
+            ),
+            $roles
+        );
+
+        // 5. Check permission
+        if (!in_array(
+            $userRole,
+            $allowedRoles,
+            true
+        )) {
             return response()->json([
                 'success' => false,
                 'code' => 'FORBIDDEN',
-                'message' => 'You do not have permission to perform this action. ',
+                'message' =>
+                    'You do not have permission to perform this action.',
             ], 403);
         }
 

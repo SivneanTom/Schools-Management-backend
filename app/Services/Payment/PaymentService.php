@@ -9,9 +9,14 @@ use App\Models\PaymentMethod;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class PaymentService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function paginate(array $filters = []): LengthAwarePaginator
     {
 
@@ -194,5 +199,45 @@ class PaymentService
             . strtoupper(
                 uniqid()
             );
+    }
+    // Parent Role 
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view payments for your linked child.');
+        }
+
+        return Payment::query()
+            ->whereHas('invoice', fn($q) => $q->where('student_id', $studentId))
+            ->with(['invoice:id,invoice_no,total_amount,status', 'paymentMethod:id,code,name_km,name_en', 'receivedBy:id,staff_no,full_name_km,full_name_en,position_title_km,position_title_en'])
+            ->orderByDesc('paid_at')
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'paymentNo' => $p->payment_no,
+                'amount' => $p->amount,
+                'paidAt' => $p->paid_at,
+                'referenceNo' => $p->reference_no,
+                'status' => $p->status,
+                'invoice' => $p->invoice ? [
+                    'id' => $p->invoice->id,
+                    'invoiceNo' => $p->invoice->invoice_no,
+                    'totalAmount' => $p->invoice->total_amount,
+                    'status' => $p->invoice->status,
+                ] : null,
+                'paymentMethod' => $p->paymentMethod ? [
+                    'id' => $p->paymentMethod->id,
+                    'code' => $p->paymentMethod->code,
+                    'nameKm' => $p->paymentMethod->name_km,
+                    'nameEn' => $p->paymentMethod->name_en,
+                ] : null,
+                'receivedBy' => $p->receivedBy ? [
+                    'staffNo' => $p->receivedBy->staff_no,
+                    'fullNameKm' => $p->receivedBy->full_name_km,
+                    'fullNameEn' => $p->receivedBy->full_name_en,
+                    'positionTitleKm' => $p->receivedBy->position_title_km,
+                    'positionTitleEn' => $p->receivedBy->position_title_en,
+                ] : null,
+            ]);
     }
 }

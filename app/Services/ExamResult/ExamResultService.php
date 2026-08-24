@@ -8,9 +8,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class ExamResultService
 {
+
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function getAll(
         array $filters = []
     ): LengthAwarePaginator {
@@ -22,30 +28,30 @@ class ExamResultService
 
         $query->when(
             $filters['exam_subject_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->where('exam_subject_id', $id)
+            fn(Builder $query, $id) =>
+            $query->where('exam_subject_id', $id)
         );
 
         $query->when(
             $filters['student_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->where('student_id', $id)
+            fn(Builder $query, $id) =>
+            $query->where('student_id', $id)
         );
 
         $query->when(
             $filters['exam_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->whereHas(
-                    'examSubject',
-                    fn (Builder $q) =>
-                        $q->where('exam_id', $id)
-                )
+            fn(Builder $query, $id) =>
+            $query->whereHas(
+                'examSubject',
+                fn(Builder $q) =>
+                $q->where('exam_id', $id)
+            )
         );
 
         $query->when(
             $filters['grade'] ?? null,
-            fn (Builder $query, string $grade) =>
-                $query->where('grade', $grade)
+            fn(Builder $query, string $grade) =>
+            $query->where('grade', $grade)
         );
 
         $query->when(
@@ -88,19 +94,19 @@ class ExamResultService
                 $merged = array_merge(
                     [
                         'exam_subject_id' =>
-                            $examResult->exam_subject_id,
+                        $examResult->exam_subject_id,
                         'student_id' =>
-                            $examResult->student_id,
+                        $examResult->student_id,
                         'score' =>
-                            $examResult->score,
+                        $examResult->score,
                         'grade' =>
-                            $examResult->grade,
+                        $examResult->grade,
                         'remarks_km' =>
-                            $examResult->remarks_km,
+                        $examResult->remarks_km,
                         'remarks_en' =>
-                            $examResult->remarks_en,
+                        $examResult->remarks_en,
                         'published_at' =>
-                            $examResult->published_at,
+                        $examResult->published_at,
                     ],
                     $data
                 );
@@ -164,7 +170,7 @@ class ExamResultService
         ExamResult $examResult
     ): void {
         DB::transaction(
-            fn () => $examResult->delete()
+            fn() => $examResult->delete()
         );
     }
 
@@ -237,12 +243,12 @@ class ExamResultService
             )
             ->when(
                 $ignoreResultId,
-                fn (Builder $query) =>
-                    $query->where(
-                        'id',
-                        '!=',
-                        $ignoreResultId
-                    )
+                fn(Builder $query) =>
+                $query->where(
+                    'id',
+                    '!=',
+                    $ignoreResultId
+                )
             )
             ->exists();
 
@@ -253,5 +259,44 @@ class ExamResultService
                 ],
             ]);
         }
+    }
+    // Parent Role Only
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view results for your linked child.');
+        }
+
+        return ExamResult::query()
+            ->where('student_id', $studentId)
+            ->whereNotNull('published_at')
+            ->with(['examSubject.exam', 'examSubject.teacherAssignment.subject'])
+            ->orderByDesc('published_at')
+            ->get()
+            ->map(fn($r) => [
+                'id' => $r->id,
+                'score' => $r->score,
+                'grade' => $r->grade,
+                'remarksKm' => $r->remarks_km,
+                'remarksEn' => $r->remarks_en,
+                'publishedAt' => $r->published_at,
+                'examSubject' => [
+                    'examDate' => $r->examSubject?->exam_date,
+                    'maxScore' => $r->examSubject?->max_score,
+                    'passScore' => $r->examSubject?->pass_score,
+                    'subject' => [
+                        'id' => $r->examSubject?->teacherAssignment?->subject?->id,
+                        'code' => $r->examSubject?->teacherAssignment?->subject?->code,
+                        'nameKm' => $r->examSubject?->teacherAssignment?->subject?->name_km,
+                        'nameEn' => $r->examSubject?->teacherAssignment?->subject?->name_en,
+                    ],
+                    'exam' => [
+                        'id' => $r->examSubject?->exam?->id,
+                        'nameKm' => $r->examSubject?->exam?->name_km,
+                        'nameEn' => $r->examSubject?->exam?->name_en,
+                        'examType' => $r->examSubject?->exam?->exam_type,
+                    ],
+                ],
+            ]);
     }
 }

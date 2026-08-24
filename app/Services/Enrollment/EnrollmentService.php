@@ -4,9 +4,15 @@ namespace App\Services\Enrollment;
 
 use App\Models\Enrollment;
 use Illuminate\Support\Facades\DB;
+use App\Services\Parent\ParentService;
+use App\Models\User;
 
 class EnrollmentService
 {
+
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function create(array $data): Enrollment
     {
         return DB::transaction(function () use ($data) {
@@ -62,5 +68,38 @@ class EnrollmentService
             'schoolClass.academicYear',
             'academicYear',
         ]);
+    }
+
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view your linked child.');
+        }
+
+        return Enrollment::query()
+            ->where('student_id', $studentId)
+            ->with(['schoolClass.grade', 'academicYear'])
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn($e) => [
+                'id' => $e->id,
+                'enrolledAt' => $e->enrolled_at,
+                'status' => $e->status,
+                'class' => [
+                    'id' => $e->schoolClass?->id,
+                    'nameKm' => $e->schoolClass?->name_km,
+                    'nameEn' => $e->schoolClass?->name_en,
+                    'grade' => [
+                        'id' => $e->schoolClass?->grade?->id,
+                        'code' => $e->schoolClass?->grade?->code,
+                        'nameKm' => $e->schoolClass?->grade?->name_km,
+                        'nameEn' => $e->schoolClass?->grade?->name_en,
+                    ],
+                ],
+                'academicYear' => [
+                    'id' => $e->academicYear?->id,
+                    'name' => $e->academicYear?->name,
+                ],
+            ]);
     }
 }

@@ -8,9 +8,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class AttendanceRecordService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
+
     public function getAll(
         array $filters = []
     ): LengthAwarePaginator {
@@ -22,49 +28,49 @@ class AttendanceRecordService
 
         $query->when(
             $filters['attendance_session_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->where(
-                    'attendance_session_id',
-                    $id
-                )
+            fn(Builder $query, $id) =>
+            $query->where(
+                'attendance_session_id',
+                $id
+            )
         );
 
         $query->when(
             $filters['student_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->where('student_id', $id)
+            fn(Builder $query, $id) =>
+            $query->where('student_id', $id)
         );
 
         $query->when(
             $filters['status'] ?? null,
-            fn (Builder $query, string $status) =>
-                $query->where('status', $status)
+            fn(Builder $query, string $status) =>
+            $query->where('status', $status)
         );
 
         $query->when(
             $filters['attendance_date'] ?? null,
-            fn (Builder $query, string $date) =>
-                $query->whereHas(
-                    'attendanceSession',
-                    fn (Builder $q) =>
-                        $q->whereDate(
-                            'attendance_date',
-                            $date
-                        )
+            fn(Builder $query, string $date) =>
+            $query->whereHas(
+                'attendanceSession',
+                fn(Builder $q) =>
+                $q->whereDate(
+                    'attendance_date',
+                    $date
                 )
+            )
         );
 
         $query->when(
             $filters['teacher_assignment_id'] ?? null,
-            fn (Builder $query, $id) =>
-                $query->whereHas(
-                    'attendanceSession',
-                    fn (Builder $q) =>
-                        $q->where(
-                            'teacher_assignment_id',
-                            $id
-                        )
+            fn(Builder $query, $id) =>
+            $query->whereHas(
+                'attendanceSession',
+                fn(Builder $q) =>
+                $q->where(
+                    'teacher_assignment_id',
+                    $id
                 )
+            )
         );
 
         return $query
@@ -107,20 +113,20 @@ class AttendanceRecordService
                 $merged = array_merge(
                     [
                         'attendance_session_id' =>
-                            $attendanceRecord
-                                ->attendance_session_id,
+                        $attendanceRecord
+                            ->attendance_session_id,
 
                         'student_id' =>
-                            $attendanceRecord->student_id,
+                        $attendanceRecord->student_id,
 
                         'status' =>
-                            $attendanceRecord->status,
+                        $attendanceRecord->status,
 
                         'remarks_km' =>
-                            $attendanceRecord->remarks_km,
+                        $attendanceRecord->remarks_km,
 
                         'remarks_en' =>
-                            $attendanceRecord->remarks_en,
+                        $attendanceRecord->remarks_en,
                     ],
                     $data
                 );
@@ -152,7 +158,7 @@ class AttendanceRecordService
         AttendanceRecord $attendanceRecord
     ): void {
         DB::transaction(
-            fn () => $attendanceRecord->delete()
+            fn() => $attendanceRecord->delete()
         );
     }
 
@@ -235,12 +241,12 @@ class AttendanceRecordService
             )
             ->when(
                 $ignoreRecordId,
-                fn (Builder $query) =>
-                    $query->where(
-                        'id',
-                        '!=',
-                        $ignoreRecordId
-                    )
+                fn(Builder $query) =>
+                $query->where(
+                    'id',
+                    '!=',
+                    $ignoreRecordId
+                )
             )
             ->exists();
 
@@ -251,5 +257,32 @@ class AttendanceRecordService
                 ],
             ]);
         }
+    }
+    //  Parent role only
+    public function getForParentChild(
+        User $user,
+        int $studentId
+    ) {
+        if (!$this->parentService->ownsChild(
+            $user,
+            $studentId
+        )) {
+            abort(
+                403,
+                'You can only view your linked child.'
+            );
+        }
+
+        return AttendanceRecord::query()
+            ->where(
+                'student_id',
+                $studentId
+            )
+            ->with([
+                'attendanceSession.teacherAssignment',
+            ])
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('id')
+            ->get();
     }
 }

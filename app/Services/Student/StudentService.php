@@ -250,6 +250,23 @@ class StudentService
         return $query->whereRaw('1 = 0');
     }
 
+    // For parent and teacher roles, find a student by ID only if they have access to that student
+    public function findAccessibleStudent(
+        User $user,
+        int $studentId
+    ): Student {
+        $query = Student::query();
+
+        $this->applyAccessScope(
+            $query,
+            $user
+        );
+
+        return $query
+            ->whereKey($studentId)
+            ->firstOrFail();
+    }
+
     public function getMyEnrollments(User $user)
     {
         $student = $this->findByUserId($user->id);

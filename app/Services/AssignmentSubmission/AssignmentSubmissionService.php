@@ -8,9 +8,14 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use App\Services\Parent\ParentService;
 
 class AssignmentSubmissionService
 {
+    public function __construct(
+        private readonly ParentService $parentService
+    ) {}
     public function getAll(array $f = []): LengthAwarePaginator
     {
         $q = AssignmentSubmission::query()->with(['assignment', 'student']);
@@ -53,5 +58,39 @@ class AssignmentSubmissionService
         if (array_key_exists('score', $d) && $d['score'] !== null && (float)$d['score'] > (float)$a->max_score) throw ValidationException::withMessages(['score' => ['The score cannot be greater than the assignment maximum score.']]);
         $dup = AssignmentSubmission::query()->where('assignment_id', $d['assignment_id'])->where('student_id', $d['student_id'])->when($ignore, fn(Builder $q) => $q->where('id', '!=', $ignore))->exists();
         if ($dup) throw ValidationException::withMessages(['student_id' => ['This student already has a submission for this assignment.']]);
+    }
+    // Parent role only
+    public function getForParentChild(User $user, int $studentId)
+    {
+        if (!$this->parentService->ownsChild($user, $studentId)) {
+            abort(403, 'You can only view your linked child.');
+        }
+
+        return AssignmentSubmission::query()
+            ->where('student_id', $studentId)
+            ->with('assignment.teacherAssignment.subject')
+            ->orderByDesc('submitted_at')
+            ->get()
+            ->map(fn($s) => [
+                'id' => $s->id,
+                'submittedAt' => $s->submitted_at,
+                'score' => $s->score,
+                'feedbackKm' => $s->feedback_km,
+                'feedbackEn' => $s->feedback_en,
+                'status' => $s->status,
+                'assignment' => [
+                    'id' => $s->assignment?->id,
+                    'titleKm' => $s->assignment?->title_km,
+                    'titleEn' => $s->assignment?->title_en,
+                    'dueAt' => $s->assignment?->due_at,
+                    'maxScore' => $s->assignment?->max_score,
+                    'subject' => [
+                        'id' => $s->assignment?->teacherAssignment?->subject?->id,
+                        'code' => $s->assignment?->teacherAssignment?->subject?->code,
+                        'nameKm' => $s->assignment?->teacherAssignment?->subject?->name_km,
+                        'nameEn' => $s->assignment?->teacherAssignment?->subject?->name_en,
+                    ],
+                ],
+            ]);
     }
 }
