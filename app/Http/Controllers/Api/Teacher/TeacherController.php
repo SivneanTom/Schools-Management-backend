@@ -23,119 +23,32 @@ class TeacherController extends Controller
     public function index(Request $request): JsonResponse
     {
         Gate::authorize('viewAny', Teacher::class);
-        $teachers = Teacher::query()
-            ->when(
-                $request->filled('search'),
-                function ($query) use ($request) {
 
-                    $search =
-                        $request->string('search')->toString();
-
-                    $query->where(function ($query) use ($search) {
-                        $query
-                            ->where(
-                                'teacher_code',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'first_name_km',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'last_name_km',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'first_name_en',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'last_name_en',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'phone',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'specialization',
-                                'ilike',
-                                "%{$search}%"
-                            )
-                            ->orWhereHas(
-                                'user',
-                                function ($userQuery) use ($search) {
-                                    $userQuery
-                                        ->where(
-                                            'email',
-                                            'ilike',
-                                            "%{$search}%"
-                                        )
-                                        ->orWhere(
-                                            'username',
-                                            'ilike',
-                                            "%{$search}%"
-                                        );
-                                }
-                            );
-                    });
-                }
-            )
-
-            ->when(
-                $request->filled('gender'),
-                fn($query) =>
-                $query->where(
-                    'gender',
-                    $request->gender
-                )
-            )
-            ->when(
-                $request->filled('status'),
-                fn($query) =>
-                $query->where(
-                    'status',
-                    $request->status
-                )
-            )
-            ->latest()
-            ->paginate(
-                $request->integer('size', 10)
-            );
+        $teachers = $this->teacherService->paginate(
+            $request->all(),
+            $request->user()
+        );
 
         return response()->json([
             'success' => true,
-            'data' => TeacherListResource::collection(
-                $teachers->items()
-            ),
+            'data' => TeacherListResource::collection($teachers->items()),
             'pagination' => [
-                'page' =>
-                $teachers->currentPage() - 1,
-
-                'size' =>
-                $teachers->perPage(),
-
-                'totalElements' =>
-                $teachers->total(),
-
-                'totalPages' =>
-                $teachers->lastPage(),
+                'page' => $teachers->currentPage() - 1,
+                'size' => $teachers->perPage(),
+                'totalElements' => $teachers->total(),
+                'totalPages' => $teachers->lastPage(),
             ],
         ]);
     }
 
-    public function store( StoreTeacherRequest $request): JsonResponse {
-
+    public function store(StoreTeacherRequest $request): JsonResponse
+    {
         Gate::authorize('create', Teacher::class);
+
         $teacher = $this->teacherService->create(
             $request->validated()
         );
+
         return response()->json([
             'success' => true,
             'message' => 'Teacher created successfully.',
@@ -143,8 +56,10 @@ class TeacherController extends Controller
         ], 201);
     }
 
-    public function show(Teacher $teacher): JsonResponse {
+    public function show(Teacher $teacher): JsonResponse
+    {
         Gate::authorize('view', $teacher);
+
         $teacher->load('user.role');
 
         return response()->json([
@@ -153,8 +68,12 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function update( UpdateTeacherRequest $request,Teacher $teacher): JsonResponse {
+    public function update(
+        UpdateTeacherRequest $request,
+        Teacher $teacher
+    ): JsonResponse {
         Gate::authorize('update', $teacher);
+
         $teacher = $this->teacherService->update(
             $teacher,
             $request->validated()
@@ -163,7 +82,6 @@ class TeacherController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Teacher updated successfully.',
-
             'data' => [
                 'id' => $teacher->id,
                 'teacherCode' => $teacher->teacher_code,
@@ -176,25 +94,137 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function updateStatus(UpdateTeacherStatusRequest $request,Teacher $teacher
+    public function updateStatus(
+        UpdateTeacherStatusRequest $request,
+        Teacher $teacher
     ): JsonResponse {
-        $teacher =
-            $this->teacherService->updateStatus(
-                $teacher,
-                $request->validated('status')
-            );
+        Gate::authorize('update', $teacher);
+
+        $teacher = $this->teacherService->updateStatus(
+            $teacher,
+            $request->validated('status')
+        );
 
         return response()->json([
             'success' => true,
-            'message' =>
-            'Teacher status updated successfully.',
-
+            'message' => 'Teacher status updated successfully.',
             'data' => [
                 'id' => $teacher->id,
                 'status' => $teacher->status,
-                'userStatus' =>
-                $teacher->user?->status,
+                'userStatus' => $teacher->user?->status,
             ],
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Teacher Self Service
+    |--------------------------------------------------------------------------
+    */
+
+    public function me(Request $request): JsonResponse
+    {
+        $teacher = $this->teacherService->findByUserId(
+            $request->user()->id
+        );
+
+        Gate::authorize('view', $teacher);
+
+        $teacher->load('user.role');
+
+        return response()->json([
+            'success' => true,
+            'data' => new TeacherResource($teacher),
+        ]);
+    }
+
+    public function myAssignments(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyAssignments($request->user()),
+        ]);
+    }
+
+    public function myClasses(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyClasses($request->user()),
+        ]);
+    }
+
+    public function myStudents(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyStudents($request->user()),
+        ]);
+    }
+
+    public function myTimetable(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyTimetable($request->user()),
+        ]);
+    }
+
+    public function myAttendanceSessions(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyAttendanceSessions($request->user()),
+        ]);
+    }
+
+    public function myExams(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyExams($request->user()),
+        ]);
+    }
+
+    public function myExamResults(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyExamResults($request->user()),
+        ]);
+    }
+
+    public function myHomework(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyHomework($request->user()),
+        ]);
+    }
+
+    public function mySubmissions(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMySubmissions($request->user()),
+        ]);
+    }
+
+    public function myLearningMaterials(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->teacherService
+                ->getMyLearningMaterials($request->user()),
         ]);
     }
 }

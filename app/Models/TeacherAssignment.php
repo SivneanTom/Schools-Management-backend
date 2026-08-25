@@ -26,7 +26,7 @@ class TeacherAssignment extends Model
         ];
     }
 
-    public function teacher()
+    public function teacher(): BelongsTo
     {
         return $this->belongsTo(
             Teacher::class,
@@ -34,7 +34,7 @@ class TeacherAssignment extends Model
         );
     }
 
-    public function schoolClass()
+    public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(
             SchoolClass::class,
@@ -42,11 +42,19 @@ class TeacherAssignment extends Model
         );
     }
 
-    public function subject()
+    public function subject(): BelongsTo
     {
         return $this->belongsTo(
             Subject::class,
             'subject_id'
+        );
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(
+            Semester::class,
+            'semester_id'
         );
     }
 }

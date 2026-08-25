@@ -229,13 +229,37 @@ class StudentService
 
         if ($role === 'TEACHER') {
             return $query->whereHas(
-                'enrollments.schoolClass'
-                    . '.teacherAssignments.teacher',
-                function ($q) use ($user) {
-                    $q->where(
-                        'user_id',
-                        $user->id
-                    );
+                'enrollments',
+                function ($enrollmentQuery)
+                use ($user) {
+                    $enrollmentQuery
+                        ->where(
+                            'status',
+                            'ACTIVE'
+                        )
+                        ->whereHas(
+                            'schoolClass'
+                                . '.teacherAssignments',
+                            function ($assignmentQuery)
+                            use ($user) {
+                                $assignmentQuery
+                                    ->where(
+                                        'status',
+                                        'ACTIVE'
+                                    )
+                                    ->whereHas(
+                                        'teacher',
+                                        function ($teacherQuery)
+                                        use ($user) {
+                                            $teacherQuery
+                                                ->where(
+                                                    'user_id',
+                                                    $user->id
+                                                );
+                                        }
+                                    );
+                            }
+                        );
                 }
             );
         }
@@ -447,7 +471,6 @@ class StudentService
     public function getMyPayments(User $user)
     {
         $student = $this->findByUserId($user->id);
-
         return Payment::query()
             ->whereHas(
                 'invoice',
@@ -469,7 +492,6 @@ class StudentService
     public function getMyReceipts(User $user)
     {
         $student = $this->findByUserId($user->id);
-
         return Receipt::query()
             ->whereHas(
                 'payment.invoice',
