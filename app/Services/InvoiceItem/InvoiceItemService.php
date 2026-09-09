@@ -3,30 +3,144 @@
 namespace App\Services\InvoiceItem;
 
 use App\Models\InvoiceItem;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceItemService
 {
-    public function create(array $data): InvoiceItem
-    {
-        $data['discount_amount'] = $data['discount_amount'] ?? 0;
+    public function paginate(
+        array $filters = []
+    ): LengthAwarePaginator {
+        $query = InvoiceItem::query()
+            ->with([
+                'invoice',
+                'studentFee'
+            ]);
 
-        $data['line_total'] =
-            ($data['quantity'] * $data['unit_amount'])
-            - $data['discount_amount'];
+        if (!empty($filters['invoice_id'])) {
+            $query->where(
+                'invoice_id',
+                $filters['invoice_id']
+            );
+        }
 
-        return InvoiceItem::create($data);
+        if (!empty($filters['student_fee_id'])) {
+            $query->where(
+                'student_fee_id',
+                $filters['student_fee_id']
+            );
+        }
+
+        $perPage = min(
+            max(
+                (int) ($filters['per_page'] ?? 20),
+                1
+            ),
+            100
+        );
+
+        return $query
+            ->latest('id')
+            ->paginate($perPage);
     }
 
-    public function update(InvoiceItem $item,array $data): InvoiceItem
-    {
-        $data = array_merge($item->toArray(),$data);
+    public function create(
+        array $data
+    ): InvoiceItem {
+        return DB::transaction(
+            function () use ($data) {
+                $quantity =
+                    (float) $data['quantity'];
 
-        $data['line_total'] =
-            ($data['quantity'] * $data['unit_amount'])
-            - ($data['discount_amount'] ?? 0);
+                $unitAmount =
+                    (float) $data['unit_amount'];
 
-        $item->update($data);
+                $discount =
+                    (float) (
+                        $data['discount_amount']
+                        ?? 0
+                    );
 
-        return $item;
+                $subtotal =
+                    $quantity * $unitAmount;
+
+                if ($discount > $subtotal) {
+                    throw new \InvalidArgumentException(
+                        'Discount amount cannot be ' .
+                        'greater than subtotal.'
+                    );
+                }
+
+                $data['discount_amount'] =
+                    $discount;
+
+                $data['line_total'] =
+                    $subtotal - $discount;
+
+                $item = InvoiceItem::create($data);
+
+                return $item->load([
+                    'invoice',
+                    'studentFee'
+                ]);
+            }
+        );
+    }
+
+    public function update(
+        InvoiceItem $item,
+        array $data
+    ): InvoiceItem {
+        return DB::transaction(
+            function () use ($item, $data) {
+                $quantity = (float) (
+                    $data['quantity']
+                    ?? $item->quantity
+                );
+
+                $unitAmount = (float) (
+                    $data['unit_amount']
+                    ?? $item->unit_amount
+                );
+
+                $discount = (float) (
+                    $data['discount_amount']
+                    ?? $item->discount_amount
+                    ?? 0
+                );
+
+                $subtotal =
+                    $quantity * $unitAmount;
+
+                if ($discount > $subtotal) {
+                    throw new \InvalidArgumentException(
+                        'Discount amount cannot be ' .
+                        'greater than subtotal.'
+                    );
+                }
+
+                $data['line_total'] =
+                    $subtotal - $discount;
+
+                $item->update($data);
+
+                return $item
+                    ->refresh()
+                    ->load([
+                        'invoice',
+                        'studentFee'
+                    ]);
+            }
+        );
+    }
+
+    public function delete(
+        InvoiceItem $item
+    ): void {
+        DB::transaction(
+            function () use ($item) {
+                $item->delete();
+            }
+        );
     }
 }

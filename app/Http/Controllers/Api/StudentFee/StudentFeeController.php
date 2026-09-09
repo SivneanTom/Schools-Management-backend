@@ -31,7 +31,9 @@ class StudentFeeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => StudentFeeResource::collection($items->items()),
+            'data' => StudentFeeResource::collection(
+                $items->items()
+            )->resolve($request),
             'pagination' => [
                 'current_page' => $items->currentPage(),
                 'per_page' => $items->perPage(),
@@ -41,35 +43,50 @@ class StudentFeeController extends Controller
         ]);
     }
 
-    public function store(StoreStudentFeeRequest $request): JsonResponse
-    {
-        $studentFee = $this->service->create($request->validated());
+    public function store(
+        StoreStudentFeeRequest $request
+    ): JsonResponse {
+        $studentFee = $this->service->create(
+            $request->validated()
+        );
 
         return response()->json([
             'success' => true,
             'message' => 'Student fee assigned successfully.',
-            'data' => new StudentFeeResource($studentFee),
+            'data' => (new StudentFeeResource($studentFee))
+                ->resolve($request),
         ], 201);
     }
 
     public function show(StudentFee $studentFee): JsonResponse
     {
-        $studentFee->load(['student', 'feeType', 'academicYear']);
+        $studentFee->load([
+            'student',
+            'feeType',
+            'academicYear',
+        ]);
 
         return response()->json([
             'success' => true,
-            'data' => new StudentFeeResource($studentFee),
+            'data' => (new StudentFeeResource($studentFee))
+                ->resolve(request()),
         ]);
     }
 
-    public function update(UpdateStudentFeeRequest $request, StudentFee $studentFee): JsonResponse
-    {
-        $studentFee = $this->service->update($studentFee, $request->validated());
+    public function update(
+        UpdateStudentFeeRequest $request,
+        StudentFee $studentFee
+    ): JsonResponse {
+        $studentFee = $this->service->update(
+            $studentFee,
+            $request->validated()
+        );
 
         return response()->json([
             'success' => true,
             'message' => 'Student fee updated successfully.',
-            'data' => new StudentFeeResource($studentFee),
+            'data' => (new StudentFeeResource($studentFee))
+                ->resolve($request),
         ]);
     }
 

@@ -7,29 +7,31 @@ use App\Http\Requests\Student\StoreStudentRequest;
 use App\Http\Requests\Student\UpdateStudentRequest;
 use App\Http\Requests\Student\UpdateStudentStatusRequest;
 use App\Http\Resources\Student\StudentResource;
+use App\Http\Resources\FinanceStudentResource;
 use App\Models\Student;
 use App\Services\Student\StudentService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
-
 class StudentController extends Controller
 {
-    public function __construct(
-        private readonly StudentService $studentService
-    ) {}
+    use ApiResponse;
+
+    public function __construct(private readonly StudentService $studentService) {}
 
     public function index(Request $request): JsonResponse
     {
         Gate::authorize('viewAny', Student::class);
+
         $students = Student::query()
             ->with('user.role')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
-                $query->where(function ($query) use ($search) {
-                    $query->where('student_code', 'ilike', "%{$search}%")
+                $query->where(function ($q) use ($search) {
+                    $q->where('student_code', 'ilike', "%{$search}%")
                         ->orWhere('first_name_km', 'ilike', "%{$search}%")
                         ->orWhere('last_name_km', 'ilike', "%{$search}%")
                         ->orWhere('first_name_en', 'ilike', "%{$search}%")
@@ -69,7 +71,6 @@ class StudentController extends Controller
             ->with('user.role')
             ->where('user_id', $request->user()->id)
             ->first();
-        Gate::authorize('view', $student);
 
         if (!$student) {
             return response()->json([
@@ -78,6 +79,8 @@ class StudentController extends Controller
                 'message' => 'Student profile was not found.',
             ], 404);
         }
+
+        Gate::authorize('view', $student);
 
         return response()->json([
             'success' => true,
@@ -99,6 +102,7 @@ class StudentController extends Controller
     public function store(StoreStudentRequest $request): JsonResponse
     {
         Gate::authorize('create', Student::class);
+
         $student = $this->studentService->create($request->validated());
 
         return response()->json([
@@ -108,9 +112,12 @@ class StudentController extends Controller
         ], 201);
     }
 
-    public function update(UpdateStudentRequest $request, Student $student): JsonResponse
-    {
+    public function update(
+        UpdateStudentRequest $request,
+        Student $student
+    ): JsonResponse {
         Gate::authorize('update', $student);
+
         $student = $this->studentService->update(
             $student,
             $request->validated()
@@ -127,6 +134,8 @@ class StudentController extends Controller
         UpdateStudentStatusRequest $request,
         Student $student
     ): JsonResponse {
+        Gate::authorize('update', $student);
+
         $student = $this->studentService->updateStatus(
             $student,
             $request->validated('status')
@@ -147,32 +156,27 @@ class StudentController extends Controller
         ]);
     }
 
-    public function myParents(Request $request)
+    public function myParents(Request $request): JsonResponse
     {
-        $student = $this->studentService
-            ->findByUserId($request->user()->id);
+        $student = $this->studentService->findByUserId(
+            $request->user()->id
+        );
 
         Gate::authorize('view', $student);
 
-        $parents = $student->parents()
-            ->get()
-            ->map(function ($parent) {
-                return [
-                    'id' => $parent->id,
-                    'parentCode' => $parent->parent_code,
-                    'firstNameKm' => $parent->first_name_km,
-                    'lastNameKm' => $parent->last_name_km,
-                    'firstNameEn' => $parent->first_name_en,
-                    'lastNameEn' => $parent->last_name_en,
-                    'gender' => $parent->gender,
-                    'phone' => $parent->phone,
-                    'relationship' =>
-                    $parent->pivot->relationship,
-                    'isPrimary' =>
-                    (bool) $parent->pivot->is_primary,
-                    'status' => $parent->status,
-                ];
-            });
+        $parents = $student->parents()->get()->map(fn($parent) => [
+            'id' => $parent->id,
+            'parentCode' => $parent->parent_code,
+            'firstNameKm' => $parent->first_name_km,
+            'lastNameKm' => $parent->last_name_km,
+            'firstNameEn' => $parent->first_name_en,
+            'lastNameEn' => $parent->last_name_en,
+            'gender' => $parent->gender,
+            'phone' => $parent->phone,
+            'relationship' => $parent->pivot->relationship,
+            'isPrimary' => (bool) $parent->pivot->is_primary,
+            'status' => $parent->status,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -180,114 +184,142 @@ class StudentController extends Controller
         ]);
     }
 
-    public function myEnrollments(Request $request)
+    public function myEnrollments(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyEnrollments($request->user()),
+            'data' => $this->studentService->getMyEnrollments(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myAttendance(Request $request)
+    public function myAttendance(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyAttendance($request->user()),
+            'data' => $this->studentService->getMyAttendance(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myExamResults(Request $request)
+    public function myExamResults(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyExamResults($request->user()),
+            'data' => $this->studentService->getMyExamResults(
+                $request->user()
+            ),
         ]);
     }
 
-    public function mySubmissions(Request $request)
+    public function mySubmissions(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMySubmissions($request->user()),
+            'data' => $this->studentService->getMySubmissions(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myFees(Request $request)
+    public function myFees(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyFees($request->user()),
+            'data' => $this->studentService->getMyFees(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myScholarships(Request $request)
+    public function myScholarships(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyScholarships($request->user()),
+            'data' => $this->studentService->getMyScholarships(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myAssignments(Request $request)
+    public function myAssignments(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyAssignments($request->user()),
+            'data' => $this->studentService->getMyAssignments(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myTimetable(Request $request)
+    public function myTimetable(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyTimetable($request->user()),
+            'data' => $this->studentService->getMyTimetable(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myLearningMaterials(Request $request)
+    public function myLearningMaterials(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyLearningMaterials(
-                    $request->user()
-                ),
+            'data' => $this->studentService->getMyLearningMaterials(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myInvoices(Request $request)
+    public function myInvoices(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyInvoices($request->user()),
+            'data' => $this->studentService->getMyInvoices(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myPayments(Request $request)
+    public function myPayments(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyPayments($request->user()),
+            'data' => $this->studentService->getMyPayments(
+                $request->user()
+            ),
         ]);
     }
 
-    public function myReceipts(Request $request)
+    public function myReceipts(Request $request): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data' => $this->studentService
-                ->getMyReceipts($request->user()),
+            'data' => $this->studentService->getMyReceipts(
+                $request->user()
+            ),
         ]);
     }
-    
+
+    public function financeLookup(Request $request): JsonResponse
+    {
+        $perPage = min(
+            max((int) $request->query('per_page', 20), 1),
+            100
+        );
+
+        $students = $this->studentService->getFinanceLookup(
+            $request->query('search'),
+            $perPage
+        );
+
+        $data = FinanceStudentResource::collection(
+            collect($students->items())
+        )->resolve();
+
+        return $this->paginated($students, $data);
+    }
 }

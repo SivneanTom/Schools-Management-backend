@@ -273,6 +273,54 @@ class StudentService
 
         return $query->whereRaw('1 = 0');
     }
+    public function getFinanceLookup(
+        ?string $search = null,
+        int $perPage = 20
+    ) {
+        return Student::query()
+            ->where('status', 'ACTIVE')
+            ->when($search, function ($query, $search) {
+                $search = trim($search);
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('student_code', 'ilike', "%{$search}%")
+                        ->orWhere('first_name_km', 'ilike', "%{$search}%")
+                        ->orWhere('last_name_km', 'ilike', "%{$search}%")
+                        ->orWhere('first_name_en', 'ilike', "%{$search}%")
+                        ->orWhere('last_name_en', 'ilike', "%{$search}%");
+                });
+            })
+            ->orderBy('id', 'asc')
+            ->paginate($perPage);
+    }
+    public function getLibraryLookup(?string $search = null)
+    {
+        return Student::query()
+            ->where('status', 'ACTIVE')
+            ->when(
+                $search,
+                function ($query) use ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('student_code', 'ilike', "%{$search}%")
+                            ->orWhere('first_name_km', 'ilike', "%{$search}%")
+                            ->orWhere('last_name_km', 'ilike', "%{$search}%")
+                            ->orWhere('first_name_en', 'ilike', "%{$search}%")
+                            ->orWhere('last_name_en', 'ilike', "%{$search}%");
+                    });
+                }
+            )
+            ->select([
+                'id',
+                'student_code',
+                'first_name_km',
+                'last_name_km',
+                'first_name_en',
+                'last_name_en',
+                'status',
+            ])
+            ->orderBy('id')
+            ->get();
+    }
 
     // For parent and teacher roles, find a student by ID only if they have access to that student
     public function findAccessibleStudent(

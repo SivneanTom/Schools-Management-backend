@@ -2,48 +2,153 @@
 
 namespace App\Services\Receipt;
 
+use App\Models\Payment;
 use App\Models\Receipt;
-use App\Models\User;
-use App\Services\Parent\ParentService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class ReceiptService
 {
-    public function __construct(
-        private readonly ParentService $parentService
-    ) {}
-
-    public function getForParentChild(User $user, int $studentId)
+    public function paginate(array $filters = [])
     {
-        if (!$this->parentService->ownsChild($user, $studentId)) {
-            abort(403, 'You can only view receipts for your linked child.');
+        $query = Receipt::query()
+            ->with([
+                'payment.invoice.student',
+                'payment.paymentMethod',
+                'payment.receivedBy'
+            ]);
+
+        if (!empty($filters['payment_id'])) {
+            $query->where(
+                'payment_id',
+                $filters['payment_id']
+            );
         }
 
-        return Receipt::query()
-            ->whereHas('payment.invoice', fn($q) => $q->where('student_id', $studentId))
-            ->with(['payment:id,invoice_id,payment_method_id,payment_no,amount,paid_at,status', 'payment.invoice:id,invoice_no,total_amount,status', 'payment.paymentMethod:id,code,name_km,name_en'])
-            ->orderByDesc('issued_at')
-            ->get()
-            ->map(fn($r) => [
-                'id' => $r->id,
-                'receiptNo' => $r->receipt_no,
-                'issuedAt' => $r->issued_at,
-                'fileUrl' => $r->file_url,
-                'payment' => $r->payment ? [
-                    'paymentNo' => $r->payment->payment_no,
-                    'amount' => $r->payment->amount,
-                    'paidAt' => $r->payment->paid_at,
-                    'status' => $r->payment->status,
-                    'invoice' => $r->payment->invoice ? [
-                        'invoiceNo' => $r->payment->invoice->invoice_no,
-                        'totalAmount' => $r->payment->invoice->total_amount,
-                        'status' => $r->payment->invoice->status,
-                    ] : null,
-                    'paymentMethod' => $r->payment->paymentMethod ? [
-                        'code' => $r->payment->paymentMethod->code,
-                        'nameKm' => $r->payment->paymentMethod->name_km,
-                        'nameEn' => $r->payment->paymentMethod->name_en,
-                    ] : null,
-                ] : null,
+        if (!empty($filters['date_from'])) {
+            $query->whereDate(
+                'issued_at',
+                '>=',
+                $filters['date_from']
+            );
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate(
+                'issued_at',
+                '<=',
+                $filters['date_to']
+            );
+        }
+
+        $perPage = min(
+            max(
+                (int) ($filters['per_page'] ?? 20),
+                1
+            ),
+            100
+        );
+
+        return $query
+            ->latest('issued_at')
+            ->paginate($perPage);
+    }
+
+    public function create(array $data): Receipt
+    {
+        return DB::transaction(function () use ($data) {
+            $payment = Payment::query()
+                ->with([
+                    'invoice',
+                    'paymentMethod',
+                    'receivedBy'
+                ])
+                ->lockForUpdate()
+                ->findOrFail($data['payment_id']);
+
+            if ($payment->status !== 'COMPLETED') {
+                throw new InvalidArgumentException(
+                    'Receipt can only be generated for a completed payment.'
+                );
+            }
+
+            $exists = Receipt::query()
+                ->where('payment_id', $payment->id)
+                ->exists();
+
+            if ($exists) {
+                throw new InvalidArgumentException(
+                    'A receipt already exists for this payment.'
+                );
+            }
+
+            $issuedAt = isset($data['issued_at'])
+                ? Carbon::parse($data['issued_at'])
+                : now();
+
+            if ($payment->paid_at) {
+                $paidAt = Carbon::parse(
+                    $payment->paid_at
+                );
+
+                if ($issuedAt->lt($paidAt)) {
+                    throw new InvalidArgumentException(
+                        'Receipt issued date cannot be earlier than payment date.'
+                    );
+                }
+            }
+
+            if (
+                $payment->invoice
+                && $payment->invoice->issued_date
+            ) {
+                $invoiceDate = Carbon::parse(
+                    $payment->invoice->issued_date
+                )->startOfDay();
+
+                if ($issuedAt->lt($invoiceDate)) {
+                    throw new InvalidArgumentException(
+                        'Receipt issued date cannot be earlier than invoice issued date.'
+                    );
+                }
+            }
+
+            $receipt = Receipt::create([
+                'payment_id' => $payment->id,
+                'receipt_no' =>
+                    $this->generateReceiptNo(),
+                'issued_at' => $issuedAt,
+                'file_url' =>
+                    $data['file_url'] ?? null
             ]);
+
+            return $receipt->load([
+                'payment.invoice.student',
+                'payment.paymentMethod',
+                'payment.receivedBy'
+            ]);
+        });
+    }
+
+    private function generateReceiptNo(): string
+    {
+        do {
+            $number =
+                'REC-' .
+                now()->format('Y') .
+                '-' .
+                strtoupper(
+                    Str::random(10)
+                );
+        } while (
+            Receipt::where(
+                'receipt_no',
+                $number
+            )->exists()
+        );
+
+        return $number;
     }
 }
